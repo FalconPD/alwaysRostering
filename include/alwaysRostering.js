@@ -9,6 +9,22 @@ exports.dryRun = false;
 exports.studentInfo = {};
 exports.teacherInfo = {};
 exports.credentials = credentials.credentials;
+exports.studentReport;
+exports.teacherReport;
+
+exports.init = function(name) {
+  casper.start();
+  if (casper.cli.args.length !== 2) {
+    casper.echo("Usage is " + name +
+      " [--dry-run] <Student Report> <Teacher Report>");
+    casper.exit();
+  }
+  exports.studentReport = casper.cli.args[0];
+  exports.teacherReport = casper.cli.args[1];
+  if (casper.cli.has("dry-run")) {
+    exports.dryRun = true;
+  }
+};
 
 //Returns hash with the key being Student ID for quick lookups
 //takes the filename to load, an array of grades, and an array of schools

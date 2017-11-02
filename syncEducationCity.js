@@ -519,13 +519,7 @@ function addTeachers() {
 }
 
 /***************************** Initialization ***************************/
-casper.start();
-if (casper.cli.args.length !== 2) {
-  casper.echo("Usage is syncEducationCity [--dry-run] <Always Rostering Student Report> <Always Rostering Teacher Report>");
-  casper.exit();
-}
-if (casper.cli.has("dry-run"))
-  alwaysRostering.dryRun = true;
+alwaysRostering.init("syncEducationCity.js");
 
 /***************************** Main Loop ******************************/
 var schoolsAndGrades = [ { school: "MLS", grades: ["K", "1", "2", "3"] },
