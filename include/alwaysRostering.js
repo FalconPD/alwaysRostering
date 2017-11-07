@@ -27,13 +27,13 @@ exports.init = function(name) {
 };
 
 //Returns hash with the key being Student ID for quick lookups
-//takes the filename to load, an array of grades, and an array of schools
-exports.loadStudentReport = function(filename, grades, schools) {
-  console.log('Loading student report: ' + filename + ' Grades: ' +
-              JSON.stringify(grades) + ' Schools: ' + JSON.stringify(schools));
-  var content = fs.read(filename);
+//takes the an array of grades, and an array of schools
+exports.loadStudentReport = function(grades, schools) {
+  console.log("Loading student report: " + exports.studentReport + " Grades: " +
+              JSON.stringify(grades) + " Schools: " + JSON.stringify(schools));
+  var content = fs.read(exports.studentReport);
   var parseResults = Papa.parse(content, {header: true});
-  var data = parseResults['data'];
+  var data = parseResults.data;
   var hash = {};
   for (var i = 0; i < data.length; i++)
   {
@@ -47,7 +47,7 @@ exports.loadStudentReport = function(filename, grades, schools) {
   exports.studentInfo = hash;
 }
 
-exports.loadTeacherReport = function(filename, schools) {
+exports.loadTeacherReport = function(schools) {
   var content;
   var parseResults;
   var data;
@@ -55,9 +55,9 @@ exports.loadTeacherReport = function(filename, schools) {
   var i;
   var teacherID;
 
-  console.log("Loading teacher report: " + filename + " Schools: " +
-              JSON.stringify(schools));
-  content = fs.read(filename);
+  console.log("Loading teacher report: " + exports.teacherReport + " Schools: "
+              + JSON.stringify(schools));
+  content = fs.read(exports.teacherReport);
   parseResults = Papa.parse(content, {header: true});
   parseResults.data.forEach(function(line) {
     if (schools.indexOf(line.schoolCode) != -1) {
