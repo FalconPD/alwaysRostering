@@ -37,10 +37,10 @@ exports.loadStudentReport = function(grades, schools) {
   var hash = {};
   for (var i = 0; i < data.length; i++)
   {
-    if ((schools.indexOf(data[i]['School Code']) != -1) &&
-        (grades.indexOf(data[i]['Grade']) != -1)) {
-      studentID = data[i]['Student ID'];
-      delete data[i]['Student ID'];
+    if ((schools.indexOf(data[i].schoolCode) != -1) &&
+        (grades.indexOf(data[i].grade) != -1)) {
+      studentID = data[i].studentID;
+      delete data[i].studentID;
       hash[studentID] = data[i]; 
     }
   }
@@ -74,10 +74,12 @@ exports.jsonPost = function(url, data) {
     console.log("Dry-run mode, skipping jsonPost");
   }
   else {
-    casper.open(url, {method: 'post',
-                      headers: {'Content-Type': 'application/json; charset=utf-8'},
-                      encoding: 'utf8',
-                      data: data});
+    casper.open(url, {
+      method: 'post',
+      headers: {'Content-Type': 'application/json; charset=utf-8'},
+      encoding: 'utf8',
+      data: data
+    });
   }
 }
 
@@ -93,12 +95,12 @@ exports.post = function(url, data) {
 //Prints a message about a student, looking up their first and last names
 exports.studentMessage = function(studentID, prefix, msg) {
   console.log('[' + prefix + '] ' + studentID + ': ' +
-              exports.studentInfo[studentID]['First Name'] + ' ' +
-              exports.studentInfo[studentID]['Last Name'] + ' ' + msg);
+              exports.studentInfo[studentID].firstName + ' ' +
+              exports.studentInfo[studentID].lastName + ' ' + msg);
 }
 
 exports.academicYear = function(studentID) {
-  grade = exports.studentInfo[studentID]['Grade'];
+  grade = exports.studentInfo[studentID].grade;
   switch (grade) {
     case 'K':
       return 'Kindergarten';
@@ -122,7 +124,7 @@ exports.academicYear = function(studentID) {
 
 //Creates a student username in Eliot's format
 exports.elementaryUsername = function(studentID) {
-  var schoolCode = exports.studentInfo[studentID]['School Code'];
+  var schoolCode = exports.studentInfo[studentID].schoolCode;
   switch (schoolCode) {
     case 'MLS':
       return 'ml' + studentID;
@@ -144,7 +146,7 @@ exports.elementaryUsername = function(studentID) {
 
 //Creates a student password in Eliot's format
 exports.elementaryPassword = function(studentID) {
-  var schoolCode = exports.studentInfo[studentID]['School Code'];
+  var schoolCode = exports.studentInfo[studentID].schoolCode;
   switch (schoolCode) {
     case 'MLS':
       return 'ml123456';
@@ -165,7 +167,7 @@ exports.elementaryPassword = function(studentID) {
 };
 
 exports.gender = function(studentID) {
-  genderCode = exports.studentInfo[studentID]['Gender Code'];
+  genderCode = exports.studentInfo[studentID].genderCode;
   switch (genderCode) {
     case 'M':
       return 'male';

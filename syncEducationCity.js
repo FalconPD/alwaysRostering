@@ -224,15 +224,15 @@ function addStudents() {
         addData["data"].push({
           "undefined": "",
           "user_defined_id": studentID,
-          "first_name": alwaysRostering.studentInfo[studentID]["First Name"],
-          "last_name": alwaysRostering.studentInfo[studentID]["Last Name"],
+          "first_name": alwaysRostering.studentInfo[studentID].firstName,
+          "last_name": alwaysRostering.studentInfo[studentID].lastName,
           "class_name":
-            alwaysRostering.studentInfo[studentID]["Homeroom Teacher"],
+            alwaysRostering.studentInfo[studentID].homeroomTeacher,
           "username": alwaysRostering.elementaryUsername(studentID),
           "password": alwaysRostering.elementaryPassword(studentID),
           "gender": alwaysRostering.gender(studentID),
           "date_of_birth":
-            alwaysRostering.studentInfo[studentID]["Date Of Birth"],
+            alwaysRostering.studentInfo[studentID].dob,
           "academic_year": alwaysRostering.academicYear(studentID),
           "preserved_warnings": ""
         });
@@ -279,14 +279,11 @@ function updateStudents() {
       if (educationCityStudent) {
         comparisons = [
           ["First Name",
-           educationCityStudent.firstname,
-           genesisStudent["First Name"]],
+           educationCityStudent.firstname, genesisStudent.firstName],
           ["Last Name",
-           educationCityStudent.lastname,
-           genesisStudent["Last Name"]],
+           educationCityStudent.lastname, genesisStudent.lastName],
           ["Class Name",
-           educationCityStudent.className,
-           genesisStudent["Homeroom Teacher"]],
+           educationCityStudent.className, genesisStudent.homeroomTeacher],
           ["Username",
            educationCityStudent.username,
            alwaysRostering.elementaryUsername(studentID)],
@@ -295,8 +292,7 @@ function updateStudents() {
            alwaysRostering.gender(studentID)],
           ["Date of Birth",
            educationCityStudent.dob,
-           moment(genesisStudent["Date Of Birth"], "M/D/YYYY")
-            .format("DD/MM/YYYY")],
+           moment(genesisStudent.dob, "M/D/YYYY").format("DD/MM/YYYY")],
           ["Academic Year",
            educationCityStudent.yearString,
            alwaysRostering.academicYear(studentID)]];
@@ -355,15 +351,15 @@ function updateStudents() {
         data = {
           "username": alwaysRostering.elementaryUsername(studentID),
           "password": educationCityStudent.password, //don't change the PW
-          "firstname": genesisStudent["First Name"],
-          "lastname": genesisStudent["Last Name"],
+          "firstname": genesisStudent.firstName,
+          "lastname": genesisStudent.lastName,
           "title": null,
           "live": 1,
           "gender": alwaysRostering.gender(studentID),
-          "classId": lookupEducationCityClass(genesisStudent["Homeroom Teacher"]),
-          "dob": moment(genesisStudent["Date Of Birth"], "M/D/YYYY")
+          "classId": lookupEducationCityClass(genesisStudent.homeroomTeacher),
+          "dob": moment(genesisStudent.dob, "M/D/YYYY")
                   .format("DD/MM/YYYY"),
-          "year": (parseInt(genesisStudent["Grade"]) + 3).toString(),  
+          "year": (parseInt(genesisStudent.grade) + 3).toString(),  
           "typeId": 5,
           "id": educationCityStudent.id,
           "email": "",
