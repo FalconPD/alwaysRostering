@@ -269,7 +269,6 @@ function updateStudents() {
     var genesisStudent;
     var educationCityStudent;
     var comparisons = [];
-    var needsUpdate;
     var title;
 
     this.echo("Determining which students to update...");
@@ -296,16 +295,7 @@ function updateStudents() {
           ["Academic Year",
            educationCityStudent.yearString,
            alwaysRostering.academicYear(studentID)]];
-        needsUpdate = false;
-        for (i = 0; i < comparisons.length; i++) {
-          if (comparisons[i][1] != comparisons[i][2]) {
-            alwaysRostering.studentMessage(studentID, "UPDATE",
-              comparisons[i][0] + " does not match (" + comparisons[i][1] +
-              "->" + comparisons[i][2] + ")");
-            needsUpdate = true;
-          }
-        }
-        if (needsUpdate) {
+        if (alwaysRostering.needsUpdate(comparisons, studentID)) {
           //Check if we need to add the class as well
           title = genesisStudent['Homeroom Teacher'];
           if (addClasses.indexOf(title) === -1) {  
@@ -518,9 +508,9 @@ function addTeachers() {
 alwaysRostering.init("syncEducationCity.js");
 
 /***************************** Main Loop ******************************/
-var schoolsAndGrades = [ { school: "MLS", grades: ["K", "1", "2", "3"] },
-                         { school: "BBS", grades: ["K", "1", "2"] },
-                         { school: "OTS", grades: ["K", "1", "2", "3" ] } ];
+var schoolsAndGrades = [ { school: "MLS", grades: ["KF", "KH", "1", "2", "3"] },
+                         { school: "BBS", grades: ["KF", "KH", "1", "2"] },
+                         { school: "OTS", grades: ["KF", "KH", "1", "2", "3" ] } ];
 var grades;
 var schools;
 var username;

@@ -107,8 +107,9 @@ function loadReadingEggsStudentInfo() {
         return students;
       });
     },
-    function timeout() {
+    function timeoutFunction() {
       this.echo("Timed out waiting for responses (" + timeout + " ms)");
+      this.exit();
     }, timeout);
   });
 }
@@ -131,8 +132,8 @@ function addStudents() {
 
 function updateDeleteStudents() {
   casper.then(function() {
-    var deletes = 0;
-    var updates = 0;
+    var deletes = [];
+    var updates = [];
 
     readingEggsStudentInfo.forEach(function(rstudent) {
       var studentID;
@@ -141,28 +142,95 @@ function updateDeleteStudents() {
     
       studentID = rstudent.studentId;
       if (studentID === "") {
-        casper.echo("[DELETE] " + rstudent.firstName + " " + rstudent.lastName +
-                    " (does not have studentId)");
-        deletes++;
+        studentID = alwaysRostering.lookupStudent(rstudent.firstName,
+                                                  rstudent.lastName);
+        if (studentID) {
+          alwaysRostering.studentMessage(studentID, "UPDATE",
+                                         "needs studentId added");
+          updates.push({rstudent: rstudent, studentID: studentID});
+        } else {
+          casper.echo("[DELETE] " + rstudent.firstName + " " +
+                      rstudent.lastName +
+                      " does not have studentId, could not look up");
+          deletes.push(rstudent.id);
+        }
         return;
       }
       if (studentID in alwaysRostering.studentInfo) {
         gstudent = alwaysRostering.studentInfo[studentID];
-        /*comparisons = [
+        comparisons = [
           ["First Name", rstudent.firstName, gstudent.firstName],
           ["Last Name", rstudent.lastName, gstudent.lastName],
-          ["Grade", rstudent.gradeName, gstudent.grade],
-          ["Login", rstudent.login, gstudent.elementaryUserName(studentID)],
-          ["Class Name", rstudent.teacherNames, gstudent.homeroomTeacher]
-        ];*/
-        updates++;
+          ["Grade", rstudent.gradeName, alwaysRostering.basicGrade(studentID)],
+          ["Login", rstudent.login,
+            alwaysRostering.elementaryUsername(studentID)],
+          ["Class Name", rstudent.teacherNames,
+            alwaysRostering.hrTeacherFirstLast(studentID)]
+        ];
+        if (alwaysRostering.needsUpdate(comparisons, studentID)) {
+          updates.push({rstudent: rstudent, studentID: studentID});
+        }
       } else {
         casper.echo("[DELETE] " + rstudent.studentId + ": " + rstudent.firstName
                     + " " + rstudent.lastName);
-        deletes++;
+        deletes.push(rstudent.id);
       }
     });
-  this.echo("Deletes: " + deletes + " Updates: " + updates);
+    this.echo("Deletes: " + deletes.length + " Updates: " + updates.length);
+    this.echo("Updating...");
+    updates.forEach(function(element) {
+      var url;
+      var rstudent;
+      var gstudent;
+      var studentID;
+      var firstName;
+      var lastName;
+      var login;
+      var grade;
+      var teacher;
+
+      studentID = element.studentID;
+      rstudent = element.rstudent;
+      gstudent = alwaysRostering.studentInfo[studentID];
+      firstName = gstudent.firstName;
+      lastName = gstudent.lastName;
+      login = alwaysRostering.elementaryUsername(studentID);
+      teacher = alwaysRostering.hrTeacherFirstLast(studentID);
+      grade = alwaysRostering.basicGrade(studentID);
+      url = "https://app.readingeggs.com/re/school/students/" + rstudent.id +
+            "/edit";
+      casper.thenOpenAndEvaluate(url, function(firstName, lastName, login,
+        studentID, teacher, grade) {
+          document.getElementById("student_first_name").value = firstName;
+          document.getElementById("student_last_name").value = lastName;
+          document.getElementById("student_login").value = login;
+          document.getElementById("student_student_id").value = studentID;
+          $("#student_school_class_id option:contains('" + teacher +
+            "')").prop("selected", "selected");
+          $("#student_grade_position option:contains('" + grade +
+            "')").prop("selected", "selected");
+          $("input[type=submit]").click();
+        }, firstName, lastName, login, studentID, teacher, grade);
+      casper.waitForUrl("https://app.readingeggs.com/re/school/students",
+        function()
+      {
+        var message;
+
+        message = this.evaluate(function() {
+          var error_div;
+          var info_div;
+
+          error_div = document.getElementById("flash_alert");
+          info_div = document.getElementById("flash_notice");
+          if (error_div) {
+            return error_div.innerHTML;
+          } else {
+            return info_div.innerHTML;
+          } 
+        });
+        this.echo(message);
+      });
+    });
   });
 }
 
@@ -179,11 +247,15 @@ casper.on("page.error", function(msg, trace) {
 var username;
 var password;
 
-alwaysRostering.loadStudentReport(["K", "1", "2", "3"], ["MLS"]);
+alwaysRostering.loadStudentReport(["KF", "KH", "1", "2"], ["MLS"]);
 alwaysRostering.loadTeacherReport(["MLS"]);
+alwaysRostering.addTeacher("8016");
+alwaysRostering.addHRTeacherStudents("WES", "8016");
 username = alwaysRostering.credentials.readingEggs["MLS"].username;
 password = alwaysRostering.credentials.readingEggs["MLS"].password;
 login(username, password);
+//TODO: Do teacher syncing first so the teachers are available when updating
+//students
 loadReadingEggsStudentInfo();
 updateDeleteStudents();
 addStudents();

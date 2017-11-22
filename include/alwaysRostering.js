@@ -39,14 +39,42 @@ exports.loadStudentReport = function(grades, schools) {
   {
     if ((schools.indexOf(data[i].schoolCode) != -1) &&
         (grades.indexOf(data[i].grade) != -1)) {
-      studentID = data[i].studentID;
-      delete data[i].studentID;
+      studentID = data[i].id;
+      delete data[i].id;
       hash[studentID] = data[i]; 
     }
   }
   exports.studentInfo = hash;
-}
+};
 
+//This adds the students of a particular HR teacher at a particular school
+//to studentInfo. Make sure you've loaded the teacher's info before you run this
+exports.addHRTeacherStudents = function(school, teacherID) {
+  var content;
+  var teacher;
+  var parseResults;
+  var studentID;
+
+  teacher = exports.teacherInfo[teacherID];
+  if (! (teacher)) {
+    casper.echo("addHRTeacherStudents: Unable to look up teacherID " +
+                teacherID + " in file " + exports.teacherReport);
+    casper.exit();
+  }
+  console.log("Adding " + school + " " + teacher.firstName + " " +
+              teacher.lastName + "'s students to studentInfo");
+  content = fs.read(exports.studentReport);
+  parseResults = Papa.parse(content, {header: true});
+  parseResults.data.forEach(function(line) {
+    if ((line.schoolCode === school) && (line.hrTeacherID === teacherID)) {
+      studentID = line.id;
+      delete line.id;
+      exports.studentInfo[studentID] = line;
+    }
+  });
+};
+
+//this loads a teacher report and OVERWRITES any previous data
 exports.loadTeacherReport = function(schools) {
   var content;
   var parseResults;
@@ -67,7 +95,31 @@ exports.loadTeacherReport = function(schools) {
     }
   });
   exports.teacherInfo = hash;
-}
+};
+
+//Adds a teacher to teacherInfo. This is useful if you have extra teachers
+//from other buildings/grades who may need their students rostered
+exports.addTeacher = function(teacherID) {
+  var content;
+  var parseResults;
+  var notFound = true;
+
+  content = fs.read(exports.teacherReport);
+  parseResults = Papa.parse(content, {header: true});
+  parseResults.data.forEach(function(line) {
+    if (teacherID === line.id) {
+      delete line.id;
+      exports.teacherInfo[teacherID] = line;
+      console.log("Adding " + line.firstName + " " + line.lastName +
+                  " to teacherInfo");
+      notFound = false;
+    }
+  });
+  if (notFound) {
+    casper.echo("addTeacher: Unable to load info for teacherID " + teacherID);
+    casper.exit();
+  }
+};
 
 exports.jsonPost = function(url, data) {
   if (exports.dryRun) {
@@ -99,82 +151,110 @@ exports.studentMessage = function(studentID, prefix, msg) {
               exports.studentInfo[studentID].lastName + ' ' + msg);
 }
 
+//Currently used by EducationCity
 exports.academicYear = function(studentID) {
+  var grade;
+
   grade = exports.studentInfo[studentID].grade;
   switch (grade) {
-    case 'K':
-      return 'Kindergarten';
-    case '1':
-      return '1st Grade';
-    case '2':
-      return '2nd Grade';
-    case '3':
-      return '3rd Grade';
-    case '4':
-      return '4th Grade';
-    case '5':
-      return '5th Grade';
-    case '6':
-      return '6th Grade';
+    case "KH":
+    case "KF":
+      return "Kindergarten";
+    case "1":
+      return "1st Grade";
+    case "2":
+      return "2nd Grade";
+    case "3":
+      return "3rd Grade";
+    case "4":
+      return "4th Grade";
+    case "5":
+      return "5th Grade";
+    case "6":
+      return "6th Grade";
     default:
-      console.log('Unknown Grade: ' + grade);
+      console.log("Unknown Grade: " + grade);
       casper.exit();
   }
 }
 
+//gets rid of some of the non-standard grades listed in Genesis
+exports.basicGrade = function(studentID) {
+  var grade;
+
+  grade = exports.studentInfo[studentID].grade;
+  switch (grade) {
+    case "KH":
+    case "KF":
+      return "K";
+    default:
+      return grade;
+  }
+};
+
 //Creates a student username in Eliot's format
 exports.elementaryUsername = function(studentID) {
-  var schoolCode = exports.studentInfo[studentID].schoolCode;
+  var schoolCode;
+
+  schoolCode = exports.studentInfo[studentID].schoolCode;
   switch (schoolCode) {
-    case 'MLS':
-      return 'ml' + studentID;
-    case 'WES':
-      return 'wl' + studentID;
-    case 'BBS':
-      return 'bb' + studentID;
-    case 'BSE':
-      return 'bs' + studentID;
-    case 'OTS':
-      return 'ot' + studentID;
-    case 'AES':
-      return 'ag' + studentID;
+    case "MLS":
+      return "ml" + studentID;
+    case "WES":
+      return "wl" + studentID;
+    case "BBS":
+      return "bb" + studentID;
+    case "BSE":
+      return "bs" + studentID;
+    case "OTS":
+      return "ot" + studentID;
+    case "AES":
+      return "ag" + studentID;
+    case "AMS":
+      return "ms" + studentID;
     default:
-      console.log('Unknown School Code in elementaryUsername: ' + schoolCode);
+      casper.echo("elementaryUsername: Unknown School Code: " + schoolCode);
       casper.exit();
   }
 };
 
 //Creates a student password in Eliot's format
 exports.elementaryPassword = function(studentID) {
-  var schoolCode = exports.studentInfo[studentID].schoolCode;
+  var schoolCode;
+
+  schoolCode = exports.studentInfo[studentID].schoolCode;
   switch (schoolCode) {
-    case 'MLS':
-      return 'ml123456';
+    case "MLS":
+      return "ml123456";
     case 'WES':
-      return 'wl123456';
-    case 'BBS':
-      return 'bb123456';
-    case 'BSE':
-      return 'bs123456';
-    case 'OTS':
-      return 'ot123456';
-    case 'AES':
-      return 'ag123456';
+      return "wl123456";
+    case "BBS":
+      return "bb123456";
+    case "BSE":
+      return "bs123456";
+    case "OTS":
+      return "ot123456";
+    case "AES":
+      return "ag123456";
+    case "AMS":
+      return "ms123456";
     default:
-      console.log('Unknown School Code in elementaryPassword: ' + schoolCode);
+      casper.echo("elementaryPassword: Unknown school code: " + schoolCode);
       casper.exit();
   }
 };
 
 exports.gender = function(studentID) {
+  var genderCode;
+
   genderCode = exports.studentInfo[studentID].genderCode;
   switch (genderCode) {
-    case 'M':
-      return 'male';
-    case 'F':
-      return 'female';
+    case "M":
+      return "male";
+    case "F":
+      return "female";
     default:
-      console.log('Unknown gender code in gender: ' + genderCode); 
+      casper.echo("gender: Unknown gender code: " + genderCode); 
       casper.exit();
   }
 };
@@ -226,4 +306,68 @@ exports.title = function(teacherID) {
   else {
     return "Mr.";
   }
+};
+
+//Determines if a student record needs to be updated
+//Takes an array of arrays with three elements and a studentID
+//comparisons[0] is the title of the comparison and comparisons[1 and 2] are
+//the two things to compare. Returns true if the record needs updating
+exports.needsUpdate = function(comparisons, studentID) {
+  for (i = 0; i < comparisons.length; i++) {
+    if (comparisons[i][1] != comparisons[i][2]) {
+      exports.studentMessage(studentID, "UPDATE", comparisons[i][0] +
+        " does not match (" + comparisons[i][1] + "->" + comparisons[i][2] +
+        ")");
+      return true;
+    }
+  }
+};
+
+//returns "FirstName LastName" for a homeroom teacher
+//will return the FIRST real teacher if the homeroom teacher is a shared teacher
+//will chop the PM/AM off the end of a kindergarten teachers name
+exports.hrTeacherFirstLast = function(studentID) {
+  var teacherID;
+  var teacher;
+  var grade;
+  var firstName;
+  var lastName;
+
+  teacherID = exports.studentInfo[studentID].hrTeacherID;
+  grade = exports.studentInfo[studentID].grade;
+  if (! (teacherID in exports.teacherInfo)) {
+    casper.echo("hrTeacherFirstLast: Unable to find teacherID (" + teacherID +
+                ") in teacherInfo.");
+    casper.exit();
+  }
+  teacher = exports.teacherInfo[teacherID];
+  if (teacher.sharedTeacher === "Y") {
+    teacher = exports.teacherInfo[teacher.sharedTeacherID1];
+  }
+  firstName = teacher.firstName;
+  switch (grade) {
+    case "KH":
+    case "KF":
+      lastName = teacher.lastName.replace(/ PM$| AM$/, ""); 
+    break;
+    default:
+      lastName = teacher.lastName;
+  }
+  return firstName + " " + lastName;
+};
+
+//See if we can find a student by first and last name. Ignores beginning
+//and ending whitespace as well as capitalization
+exports.lookupStudent = function(firstName, lastName) {
+  var studentID;
+
+  for (studentID in exports.studentInfo) {
+    if ((exports.studentInfo[studentID].firstName.toUpperCase() ===
+         firstName.trim().toUpperCase()) &&
+        (exports.studentInfo[studentID].lastName.toUpperCase() ===
+         lastName.trim().toUpperCase())) {
+      return studentID;
+    }
+  }
+  return false;
 };
