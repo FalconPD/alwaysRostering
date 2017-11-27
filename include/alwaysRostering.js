@@ -24,6 +24,12 @@ exports.init = function(name) {
   if (casper.cli.has("dry-run")) {
     exports.dryRun = true;
   }
+  casper.on('remote.message', function(message) {
+    this.echo("remote.message: " + message);
+  });
+  casper.on("page.error", function(msg, trace) {
+    this.echo("page.error: " + msg);
+  });
 };
 
 //Returns hash with the key being Student ID for quick lookups
@@ -367,6 +373,21 @@ exports.lookupStudent = function(firstName, lastName) {
         (exports.studentInfo[studentID].lastName.toUpperCase() ===
          lastName.trim().toUpperCase())) {
       return studentID;
+    }
+  }
+  return false;
+};
+
+//returns the first non-shared teacher that matches first and last name.
+exports.lookupTeacher = function(firstName, lastName) {
+  var teacherID;
+  var teacher;
+
+  for (teacherID in exports.teacherInfo) {
+    teacher = exports.teacherInfo[teacherID]; 
+    if ((teacher.firstName === firstName) && (teacher.lastName === lastName)
+        && (teacher.sharedTeacher === "N")) {
+      return teacherID;
     }
   }
   return false;

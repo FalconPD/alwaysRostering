@@ -1,5 +1,7 @@
 "use strict";
 
+//TODO: Add dry-run checks
+
 /**************************** Globals and Libraries ************************/
 var casper = require("casper").create({
 //  verbose: true,
@@ -12,6 +14,7 @@ var casper = require("casper").create({
 var utils = require("utils");
 var alwaysRostering = require("./include/alwaysRostering");
 var readingEggsStudentInfo = [];
+var readingEggsTeacherInfo = [];
 
 /*************************** Utility Functions *****************************/
 function lookupReadingEggsStudent(studentId) {
@@ -25,6 +28,37 @@ function lookupReadingEggsStudent(studentId) {
     }
   }
   return false;
+}
+
+//Waits for the page to load, then prints the notification at the top of the
+//page you get after submitting an edit for a teacher or student 
+function printEditMessage(email) {
+
+  casper.waitFor(
+    function check() {
+      return casper.evaluate(function() {
+        return (document.getElementById("flash_alert") ||
+                document.getElementById("flash_notice"));
+      });
+    },
+    function then() {
+      var message;
+
+      message = casper.evaluate(function() {
+        var error_div;
+        var info_div;
+
+        error_div = document.getElementById("flash_alert");
+        info_div = document.getElementById("flash_notice");
+        if (error_div) {
+          return error_div.innerHTML;
+        } else {
+          return info_div.innerHTML;
+        }
+      });
+      casper.echo(message);
+    }
+  );
 }
 
 /*************************** Steps in Sync Process *************************/
@@ -231,17 +265,150 @@ function updateDeleteStudents() {
         this.echo(message);
       });
     });
+    //TODO: Actually perform deletes
+  });
+}
+
+//Same deal as students, we have to look on each edit screen to get all the
+//info for a teacher. Does NOT load teacher data for a login passwed to it so
+//we don't mess with the admin account
+function loadReadingEggsTeacherInfo(adminLogin) {
+  var timeout;
+
+  casper.then(function() {
+    this.echo("Loading teacher info from Reading Eggs...");
+    this.open("https://app.readingeggs.com/re/school/teachers");
+  });
+  casper.then(function() {
+    timeout = this.evaluate(function(adminLogin) {
+      //Globals in the context of the page
+      teachers = [];
+      completed_teachers = 0;
+
+      //Local to this evaluation
+      var timeout = 0;
+      var TIMEOUT_INTERVAL = 100;
+
+      function parseEditPage(data, teacher) {
+        var $data
+
+        $data = $(data);
+        teacher.login = $data.find("#teacher_login").val();
+        teacher.email = $data.find("#teacher_email").val();
+        teacher.password = $data.find("#teacher_password").val();
+        teacher.passwordConfirmation =
+          $data.find("#teacher_password_confirmation").val();
+        teacher.accent = $data.find("#teacher_accent_id option:selected").val();
+        teacher.receiveEmails =
+          $data.find("#teacher_receive_mathseeds_emails").is(":checked");
+        completed_teachers++;
+      }
+
+      $("#manage-entities tbody tr").each(function(index, element) {
+        var teacher = {};
+
+        teacher.login = $(this).children("td.login").text();
+        if (teacher.login === adminLogin) { //don't load info for admin
+          return;
+        }
+        teacher.id = $(this).attr('id').slice(8);        
+        teacher.firstName = $(this).children("td.first_name").text();
+        teacher.lastName = $(this).children("td.last_name").text();
+        teacher.students = $(this).children("td.students").text();
+        teacher.trialEndDate = $(this).children("td.trial_end_date").text();
+
+        teachers.push(teacher);
+
+        setTimeout(function() {
+          $.get("https://app.readingeggs.com/re/school/teachers/" + teacher.id,
+            function(data) {
+              parseEditPage(data, teacher);
+            }
+          );
+        }, timeout);
+        timeout += TIMEOUT_INTERVAL;
+      });
+      return teachers.length * (TIMEOUT_INTERVAL * 2);
+    }, adminLogin);
+  });
+  casper.then(function check() {
+    casper.waitFor(function() {
+      return this.evaluate(function() {
+        return (completed_teachers === teachers.length);
+      });
+    }, function then() {
+      readingEggsTeacherInfo = this.getGlobal("teachers");
+    },
+    function timeoutFunction() {
+      this.echo("Timed out waiting for responses (" + timeout + " ms)");
+      this.exit();
+    }, timeout);
+  });
+}
+
+//teachers have to be looked up by first and last name so the only thing
+//we can really update is their login and email
+function updateDeleteTeachers() {
+  var updates = [];
+  var deletes = [];
+
+  casper.then(function() {
+    readingEggsTeacherInfo.forEach(function(rTeacher) {
+      var comparisons = [];
+      var teacherID;
+      var gTeacher;
+      var gTeacherEmail;
+      var needsUpdate = false;
+
+      teacherID = alwaysRostering.lookupTeacher(rTeacher.firstName,
+        rTeacher.lastName);
+      if (teacherID) {
+        gTeacher = alwaysRostering.teacherInfo[teacherID];
+        gTeacherEmail = alwaysRostering.teacherEmail(teacherID);
+        if (rTeacher.email !== gTeacherEmail) {
+          casper.echo("[UPDATE] " + teacherID + ": " + gTeacher.firstName +
+            " " + gTeacher.lastName + " Email: " + rTeacher.email + "->" +
+            gTeacherEmail);
+          needsUpdate = true;
+        }
+        if (rTeacher.login !== gTeacherEmail) {
+          casper.echo("[UPDATE] " + teacherID + ": " + gTeacher.firstName +
+            " " + gTeacher.lastName + " Login: " + rTeacher.login + "->" +
+            gTeacherEmail);
+          needsUpdate = true;
+        }
+        if (needsUpdate) {
+          updates.push({rTeacher: rTeacher, teacherID: teacherID});
+        }
+      } else {
+        casper.echo("[DELETE] " + rTeacher.firstName + " " + rTeacher.lastName);
+        deletes.push(rTeacher.id);
+      }
+    });
+    this.echo("Deletes: " + deletes.length + " Updates: " + updates.length);
+    this.echo("Updating...");
+    updates.forEach(function(element) {
+      var email;
+      var url;
+
+      email = alwaysRostering.teacherEmail(element.teacherID);
+      url = "https://app.readingeggs.com/re/school/teachers/" +
+        element.rTeacher.id;
+      casper.thenOpenAndEvaluate(url, function(email) {
+        document.getElementById("teacher_login").value = email;
+        document.getElementById("teacher_email").value = email;
+        $("input[type=submit]").click();
+      }, email);
+      casper.then(function() {
+        printEditMessage(email);
+      });
+    });
+    //TODO: Actually do teacher deletes
   });
 }
 
 /************************* Initialization **********************************/
 alwaysRostering.init("syncReadingEggs.js");
-casper.on('remote.message', function(message) {
-    this.echo("remote.message: " + message);
-});
-casper.on("page.error", function(msg, trace) {
-    this.echo("page.error: " + msg);
-});
 
 /************************* Main Loop ***************************************/
 var username;
@@ -254,8 +421,8 @@ alwaysRostering.addHRTeacherStudents("WES", "8016");
 username = alwaysRostering.credentials.readingEggs["MLS"].username;
 password = alwaysRostering.credentials.readingEggs["MLS"].password;
 login(username, password);
-//TODO: Do teacher syncing first so the teachers are available when updating
-//students
+loadReadingEggsTeacherInfo(username);
+updateDeleteTeachers();
 loadReadingEggsStudentInfo();
 updateDeleteStudents();
 addStudents();
