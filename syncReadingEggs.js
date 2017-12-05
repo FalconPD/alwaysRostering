@@ -30,9 +30,59 @@ function lookupReadingEggsStudent(studentId) {
   return false;
 }
 
+//Teachers don't have an external ID in Reading Eggs, so we have to look them
+//up by first and last name
+function lookupReadingEggsTeacher(teacherID) {
+  var i;
+  var rTeacher;
+  var gTeacher;
+
+  gTeacher = alwaysRostering.teacherInfo[teacherID];
+  for (i = 0; i < readingEggsTeacherInfo.length; i++) {
+    rTeacher = readingEggsTeacherInfo[i];
+    if ((rTeacher.firstName === gTeacher.firstName) &&
+        (rTeacher.lastName === gTeacher.lastName)) {
+      return rTeacher;
+    }
+  }
+  return false;
+}
+
+function findTeachersToAdd() {
+  var teacher = {};
+  var teacherID;
+  var email;
+  var adds = [];
+
+  for (teacherID in alwaysRostering.teacherInfo) {
+    teacher = alwaysRostering.teacherInfo[teacherID];
+    email = alwaysRostering.teacherEmail(teacherID);
+
+    //Don't add Kindergarten teachers with PM or AM after their name
+    if ((teacher.gradeLevel === "KH") || (teacher.gradeLevel === "KF")) {
+      if (/ PM$| AM$/.test(teacher.lastName)) {
+        continue;
+      }
+    }
+
+    //Don't add shared teachers
+    if (teacher.sharedTeacher === "Y")
+      continue;
+
+    if (! lookupReadingEggsTeacher(teacherID)) {
+      casper.echo("[ADD] " + teacherID + ": " + teacher.firstName + " " +
+                  teacher.lastName + " " + teacher.schoolCode + " " +
+                  teacher.gradeLevel);
+      adds.push(teacherID);
+    }
+  }
+
+  return adds;
+}
+
 //Waits for the page to load, then prints the notification at the top of the
 //page you get after submitting an edit for a teacher or student 
-function printEditMessage(email) {
+function printEditMessage() {
 
   casper.waitFor(
     function check() {
@@ -152,6 +202,7 @@ function addStudents() {
   casper.then(function() {
     var adds = 0;
     var student = {};
+    var studentID;
 
     for (studentID in alwaysRostering.studentInfo) {
       student = alwaysRostering.studentInfo[studentID];
@@ -245,104 +296,54 @@ function updateDeleteStudents() {
             "')").prop("selected", "selected");
           $("input[type=submit]").click();
         }, firstName, lastName, login, studentID, teacher, grade);
-      casper.waitForUrl("https://app.readingeggs.com/re/school/students",
-        function()
-      {
-        var message;
-
-        message = this.evaluate(function() {
-          var error_div;
-          var info_div;
-
-          error_div = document.getElementById("flash_alert");
-          info_div = document.getElementById("flash_notice");
-          if (error_div) {
-            return error_div.innerHTML;
-          } else {
-            return info_div.innerHTML;
-          } 
-        });
-        this.echo(message);
+      casper.then(function() {
+        printEditMessage();
       });
     });
     //TODO: Actually perform deletes
   });
 }
 
-//Same deal as students, we have to look on each edit screen to get all the
-//info for a teacher. Does NOT load teacher data for a login passwed to it so
-//we don't mess with the admin account
-function loadReadingEggsTeacherInfo(adminLogin) {
-  var timeout;
-
+function setupTeacherPage() {
   casper.then(function() {
     this.echo("Loading teacher info from Reading Eggs...");
     this.open("https://app.readingeggs.com/re/school/teachers");
   });
+
+  //We need to inject the queue and teacher code to run our functions
+  casper.thenEvaluate(alwaysRostering.ARQueue);
+  casper.thenEvaluate(ARTeacher);
+}
+
+function loadReadingEggsTeacherInfo(adminLogin) {
+  casper.thenEvaluate(function() { ARTeacher.load(); });
   casper.then(function() {
-    timeout = this.evaluate(function(adminLogin) {
-      //Globals in the context of the page
-      teachers = [];
-      completed_teachers = 0;
-
-      //Local to this evaluation
-      var timeout = 0;
-      var TIMEOUT_INTERVAL = 100;
-
-      function parseEditPage(data, teacher) {
-        var $data
-
-        $data = $(data);
-        teacher.login = $data.find("#teacher_login").val();
-        teacher.email = $data.find("#teacher_email").val();
-        teacher.password = $data.find("#teacher_password").val();
-        teacher.passwordConfirmation =
-          $data.find("#teacher_password_confirmation").val();
-        teacher.accent = $data.find("#teacher_accent_id option:selected").val();
-        teacher.receiveEmails =
-          $data.find("#teacher_receive_mathseeds_emails").is(":checked");
-        completed_teachers++;
-      }
-
-      $("#manage-entities tbody tr").each(function(index, element) {
-        var teacher = {};
-
-        teacher.login = $(this).children("td.login").text();
-        if (teacher.login === adminLogin) { //don't load info for admin
-          return;
-        }
-        teacher.id = $(this).attr('id').slice(8);        
-        teacher.firstName = $(this).children("td.first_name").text();
-        teacher.lastName = $(this).children("td.last_name").text();
-        teacher.students = $(this).children("td.students").text();
-        teacher.trialEndDate = $(this).children("td.trial_end_date").text();
-
-        teachers.push(teacher);
-
-        setTimeout(function() {
-          $.get("https://app.readingeggs.com/re/school/teachers/" + teacher.id,
-            function(data) {
-              parseEditPage(data, teacher);
-            }
-          );
-        }, timeout);
-        timeout += TIMEOUT_INTERVAL;
-      });
-      return teachers.length * (TIMEOUT_INTERVAL * 2);
-    }, adminLogin);
+    casper.waitFor(
+      function() {
+        return casper.evaluate(function() {
+          return ARTeacher.done();
+        });
+      },
+      function then() {},
+      function onTimeout() {
+        casper.echo("Timed out loading teachers.");
+        casper.exit();
+      },
+      60*2*1000 //Take up to two minutes to load all the teachers
+    );
   });
-  casper.then(function check() {
-    casper.waitFor(function() {
-      return this.evaluate(function() {
-        return (completed_teachers === teachers.length);
-      });
-    }, function then() {
-      readingEggsTeacherInfo = this.getGlobal("teachers");
-    },
-    function timeoutFunction() {
-      this.echo("Timed out waiting for responses (" + timeout + " ms)");
-      this.exit();
-    }, timeout);
+  casper.then(function() {
+    var i;
+
+    readingEggsTeacherInfo = casper.evaluate(function() {
+      return ARTeacher.getTeachers();
+    });
+    //don't touch the admin account
+    for (i = 0; i < readingEggsTeacherInfo.length; i++) {
+      if (readingEggsTeacherInfo[i].login === adminLogin) {
+        readingEggsTeacherInfo.splice(i, 1);
+      }
+    }
   });
 }
 
@@ -400,11 +401,198 @@ function updateDeleteTeachers() {
         $("input[type=submit]").click();
       }, email);
       casper.then(function() {
-        printEditMessage(email);
+        printEditMessage();
       });
     });
     //TODO: Actually do teacher deletes
   });
+}
+
+function addTeachers() {
+  var adds = [];
+
+  casper.then(function() {
+    adds = findTeachersToAdd();
+  });
+  casper.then(function() {
+    var waitTime = 20000;
+
+    casper.evaluate(alwaysRostering.ARQueue);
+    casper.evaluate(teacherCode);
+    casper.waitFor(
+      function() {
+        return casper.evaluate(function() {
+          return ARTeacher.done();
+        });
+      },
+      function then() {},
+      function onTimeout() {
+        casper.echo("Timed out waiting " + waitTime + "ms to add " +
+                    adds.length + " teachers");
+        casper.exit();
+      },
+      waitTime
+    );            
+  });
+}
+
+/************************* Code to Inject in Page **************************/
+function ARTeacher() {
+  window.ARTeacher = (function() {
+    var requestsRemaining = 0;
+    var authenticity_token = $("input[name='authenticity_token']:first").val();
+    var teachers = [];
+
+    function errorCallback(jqXHR, textStatus, errorThrown) {
+      requestsRemaining--;
+      console.log("Error " + errorThrown + " " + textStatus);
+    }
+
+    //Parses the page returned to the callback and returns info / errors
+    function getInfo(data) {
+      var $data;
+      var error;
+      var info;
+
+      $data = $(data);
+      error = $data.find("#flash_alert").text().replace(/\s\s+|\n/g, " ");
+      info = $data.find("#flash_notice").text().replace(/\s\s+|\n/g, " ");
+
+      return error + info;
+    }
+
+    function addTeacherCallback(data, firstName, lastName, email) {
+      requestsRemaining--;
+      console.log("Adding " + firstName + " " + lastName + ": " +
+        getInfo(data));
+    }
+
+    function delTeacherCallback(data, ids) {
+      requestsRemaining--;
+      console.log("Deleting " + ids + ": " + getInfo(data));
+    }
+
+    function editTeacherCallback(data, id, login, firstName, lastName, email,
+      password) {
+      requestsRemaining--;
+      console.log("Editing " + firstName + " " + lastName + ": " +
+        getInfo(data));
+    }
+
+    function loadCallback(data, teacher) {
+      var $data
+
+      requestsRemaining--;
+      $data = $(data);
+      teacher.login = $data.find("#teacher_login").val();
+      teacher.email = $data.find("#teacher_email").val();
+      teacher.password = $data.find("#teacher_password").val();
+      teacher.passwordConfirmation =
+        $data.find("#teacher_password_confirmation").val();
+      teacher.accent = $data.find("#teacher_accent_id option:selected").val();
+      teacher.receiveEmails =
+        $data.find("#teacher_receive_mathseeds_emails").is(":checked");
+    }
+
+    return {
+      add: function(firstName, lastName, email) {
+        var postData = {
+          utf8:                          "",
+          "teacher[first_name]":         firstName,
+          "teacher[last_name]":          lastName,
+          "teacher[email]":              email,
+          "teacher[email_confirmation]": email,
+          account_type:                  "no_trial",
+          commit:                        "Create+Teacher"
+        };
+        var ajaxSettings = {
+          type: "POST",
+          url: "https://app.readingeggs.com/re/school/teachers",
+          data: postData,
+          success: function(data) {
+            addTeacherCallback(data, firstName, lastName, email)
+          },
+          error: errorCallback
+        };
+
+        requestsRemaining++;
+        ARQueue($.ajax, ajaxSettings);
+      },
+      del: function(ids) {
+        var postData = {
+          utf8:               "",
+          _method:            "patch",
+          authenticity_token: authenticity_token,
+          operation:          "remove_teachers",
+          "teacher_ids[]":    ids 
+        };
+        var ajaxSettings = {
+          type: "POST",
+          url: "https://app.readingeggs.com/re/school/teachers",
+          data: postData,
+          success: function(data) {
+            delTeacherCallback(data, ids);
+          }, 
+          error: errorCallback
+        };
+      
+        requestsRemaining++;
+        ARQueue($.ajax, ajaxSettings);
+      },
+      edit: function(id, login, firstName, lastName, email, password) {
+        var postData = {
+          utf8:                                "",
+          _method:                             "patch",
+          authenticity_token:                  authenticity_token,
+          "teacher[login]":                    login,
+          "teacher[first_name]":               firstName,
+          "teacher[last_name]":                lastName,
+          "teacher[email]":                    email,
+          "teacher[password]":                 password,
+          "teacher[password_confirmation]":    password,
+          "teacher[accent_id]":                3,
+          "teacher[receive_mathseeds_emails]": 0,
+          commit:                              "Update+Teacher"
+        };
+        var ajaxSettings = {
+          type: "POST",
+          url: "https://app.readingeggs.com/re/school/teachers?id=" + id,
+          data: postData,
+          success: function(data) {
+            editTeacherCallback(data, id, login, firstName, lastName, email,
+              password);
+          }, 
+          error: errorCallback
+        };
+
+        requestsRemaining++;
+        ARQueue($.ajax, ajaxSettings);
+      },
+      load: function() {
+        $("#manage-entities tbody tr").each(function(index, element) {
+          var teacher = {};
+          var url;
+
+          teacher.login = $(this).children("td.login").text();
+          teacher.id = $(this).attr('id').slice(8);        
+          teacher.firstName = $(this).children("td.first_name").text();
+          teacher.lastName = $(this).children("td.last_name").text();
+          teacher.students = $(this).children("td.students").text();
+          teacher.trialEndDate = $(this).children("td.trial_end_date").text();
+          teachers.push(teacher);
+          url = "https://app.readingeggs.com/re/school/teachers/" + teacher.id;
+          requestsRemaining++;
+          ARQueue($.get, url, function(data) { loadCallback(data, teacher); });
+        });
+      },
+      getTeachers: function() {
+        return teachers;
+      },
+      done: function() {
+        return (requestsRemaining === 0);
+      }
+    }
+  })();
 }
 
 /************************* Initialization **********************************/
@@ -415,16 +603,18 @@ var username;
 var password;
 
 alwaysRostering.loadStudentReport(["KF", "KH", "1", "2"], ["MLS"]);
-alwaysRostering.loadTeacherReport(["MLS"]);
+alwaysRostering.loadTeacherReport(["MLS"], ["KF", "KH", "1", "2"]);
 alwaysRostering.addTeacher("8016");
 alwaysRostering.addHRTeacherStudents("WES", "8016");
 username = alwaysRostering.credentials.readingEggs["MLS"].username;
 password = alwaysRostering.credentials.readingEggs["MLS"].password;
 login(username, password);
+setupTeacherPage();
 loadReadingEggsTeacherInfo(username);
-updateDeleteTeachers();
+/*updateDeleteTeachers();
+addTeachers();
 loadReadingEggsStudentInfo();
 updateDeleteStudents();
-addStudents();
+addStudents();*/
 
 casper.run();

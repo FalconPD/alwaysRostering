@@ -29,9 +29,12 @@ exports.init = function(name) {
   });
   casper.on("page.error", function(msg, trace) {
     this.echo("page.error: " + msg);
+    this.exit();
   });
 };
 
+//FIXME: Swap schools and grades order in arguments to be consistent with
+//loadTeacherReport
 //Returns hash with the key being Student ID for quick lookups
 //takes the an array of grades, and an array of schools
 exports.loadStudentReport = function(grades, schools) {
@@ -81,24 +84,36 @@ exports.addHRTeacherStudents = function(school, teacherID) {
 };
 
 //this loads a teacher report and OVERWRITES any previous data
-exports.loadTeacherReport = function(schools) {
+exports.loadTeacherReport = function(schools, grades) {
   var content;
   var parseResults;
   var data;
   var hash = {};
   var i;
   var teacherID;
+  var gradeLevel;
 
-  console.log("Loading teacher report: " + exports.teacherReport + " Schools: "
-              + JSON.stringify(schools));
+  casper.echo("Loading teacher report: " + exports.teacherReport + " Schools: "
+              + JSON.stringify(schools) + " Grades: " +
+              JSON.stringify(grades));
   content = fs.read(exports.teacherReport);
-  parseResults = Papa.parse(content, {header: true});
+  parseResults = Papa.parse(content, {header: true, skipEmptyLines: true});
   parseResults.data.forEach(function(line) {
-    if (schools.indexOf(line.schoolCode) != -1) {
-      teacherID = line.id;
-      delete line.id;
-      hash[teacherID] = line; 
+    //We have to remove leading zeros from gradeLevel in the teacher report
+    gradeLevel = line.gradeLevel.replace(/^0+/, "");
+    line.gradeLevel = gradeLevel;
+    if (schools) {
+      if (schools.indexOf(line.schoolCode) === -1) {
+        return;
+      }
     }
+    if (grades) {
+      if (grades.indexOf(line.gradeLevel) === -1) {
+        return;
+      }
+    }
+    teacherID = line.id;
+    hash[teacherID] = line; 
   });
   exports.teacherInfo = hash;
 };
@@ -391,4 +406,37 @@ exports.lookupTeacher = function(firstName, lastName) {
     }
   }
   return false;
+};
+
+//This code is meant to be injected in to a web page it sets up a queue that
+//makes functions run with a space of DELAY in between them
+exports.ARQueue = function() {
+  window.ARQueue = (function() {
+    var last = 0;
+    var DELAY = 100;
+
+    return function(fn) {
+      var now;
+      var args = [];
+      var context;
+      var i;
+
+      now = new Date().getTime();
+      //Remove the first argument, it is our callback function
+      for (i = 0; i < arguments.length; i++) {
+        if (i !== 0) {
+          args.push(arguments[i]);
+        }
+      }
+      context = this;
+
+      if ((now - last) > DELAY) { //Run right away
+        last = now;
+        fn.apply(context, args);
+      } else { //Run after a delay
+        last += DELAY;
+        setTimeout(function() { fn.apply(context, args) }, last - now);
+      }
+    }
+  })();
 };
