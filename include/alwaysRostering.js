@@ -353,6 +353,7 @@ exports.hrTeacherFirstLast = function(studentID) {
   var grade;
   var firstName;
   var lastName;
+  var newID;
 
   teacherID = exports.studentInfo[studentID].hrTeacherID;
   grade = exports.studentInfo[studentID].grade;
@@ -363,7 +364,12 @@ exports.hrTeacherFirstLast = function(studentID) {
   }
   teacher = exports.teacherInfo[teacherID];
   if (teacher.sharedTeacher === "Y") {
-    teacher = exports.teacherInfo[teacher.sharedTeacherID1];
+    newID = teacher.sharedTeacherID1;
+    if (! (newID in exports.teacherInfo)) {
+      casper.echo("hrTeacherFirstLast: Unable to find sharedTeacherID1 (" + newID + ") in teacherInfo.");
+      casper.exit();
+    }
+    teacher = exports.teacherInfo[newID];
   }
   firstName = teacher.firstName;
   switch (grade) {
@@ -406,37 +412,4 @@ exports.lookupTeacher = function(firstName, lastName) {
     }
   }
   return false;
-};
-
-//This code is meant to be injected in to a web page it sets up a queue that
-//makes functions run with a space of DELAY in between them
-exports.ARQueue = function() {
-  window.ARQueue = (function() {
-    var last = 0;
-    var DELAY = 100;
-
-    return function(fn) {
-      var now;
-      var args = [];
-      var context;
-      var i;
-
-      now = new Date().getTime();
-      //Remove the first argument, it is our callback function
-      for (i = 0; i < arguments.length; i++) {
-        if (i !== 0) {
-          args.push(arguments[i]);
-        }
-      }
-      context = this;
-
-      if ((now - last) > DELAY) { //Run right away
-        last = now;
-        fn.apply(context, args);
-      } else { //Run after a delay
-        last += DELAY;
-        setTimeout(function() { fn.apply(context, args) }, last - now);
-      }
-    }
-  })();
 };
