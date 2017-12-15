@@ -20,6 +20,11 @@ function Requests() {
     console.log("Error " + errorThrown + " " + textStatus);
   };
 
+  this.delCallback = function(data, ids) {
+    this.requestsRemaining--;
+    console.log("Deleting " + ids + ": " + this.parseInfo(data));
+  }
+
   this.get = function() { return this.data; };
   this.done = function() { return (this.requestsRemaining === 0); };
 }

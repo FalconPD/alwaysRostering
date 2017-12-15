@@ -19,6 +19,18 @@ var readingEggsStudentInfo = [];
 var readingEggsTeacherInfo = [];
 
 /*************************** Utility Functions *****************************/
+function removeDuplicates(arr) {
+    var unique_array = [];
+    var i;
+
+    for(i = 0; i < arr.length; i++) {
+        if(unique_array.indexOf(arr[i]) == -1){
+            unique_array.push(arr[i])
+        }
+    }
+    return unique_array
+}
+
 function lookupReadingEggsStudent(studentId) {
   var i;
   var student;
@@ -77,23 +89,19 @@ function setupTeacherPage() {
   });
 }
 
-function waitForRequests(type) {
-  var test;
-
-  switch(type) {
-    case "teacher":
-      test = function() { return teacherRequests.done(); };
-      break;
-    case "student":
-      test = function() { return studentRequests.done(); };
-      break;
-    default:
-      casper.echo("waitForRequests: Unknown request type " + type);
-      casper.exit();
-  }
+function waitForRequests() {
   casper.then(function() {
     casper.waitFor(
-      function() { return casper.evaluate(test); },
+      function() {
+        return casper.evaluate(function() {
+          if (typeof teacherRequests === "object") {
+            return teacherRequests.done();
+          }
+          else {
+            return studentRequests.done();
+          }
+        });
+      },
       function then() {},
       function onTimeout() {
         casper.echo("Timed out waiting for requests.");
@@ -201,13 +209,6 @@ function addTeachers() {
 
       teacher = alwaysRostering.teacherInfo[teacherID];
 
-      //Don't add Kindergarten teachers with PM or AM after their name
-      if ((teacher.gradeLevel === "KH") || (teacher.gradeLevel === "KF")) {
-        if (/ PM$| AM$/.test(teacher.lastName)) {
-          continue;
-        }
-      }
-
       //Don't add shared teachers
       if (teacher.sharedTeacher === "Y")
         continue;
@@ -265,6 +266,7 @@ function updateDeleteStudents() {
       var comparisons = [];
       var needsUpdate = false;
       var editInfo;
+      var grade;
     
       studentID = rstudent.studentId;
       if (studentID === "") {
@@ -283,10 +285,14 @@ function updateDeleteStudents() {
         }
       } else if (studentID in alwaysRostering.studentInfo) {
         gstudent = alwaysRostering.studentInfo[studentID];
+        grade = alwaysRostering.basicGrade(studentID);
+        if (parseInt(grade) > 9) { //Reading Eggs has a maximum grade of 9
+          grade = rstudent.gradeName;
+        } 
         comparisons = [
           ["First Name", rstudent.firstName, gstudent.firstName],
           ["Last Name", rstudent.lastName, gstudent.lastName],
-          ["Grade", rstudent.gradeName, alwaysRostering.basicGrade(studentID)],
+          ["Grade", rstudent.gradeName, grade],
           ["Login", rstudent.login,
             alwaysRostering.elementaryUsername(studentID)],
           ["Class Name", rstudent.teacherNames,
@@ -320,10 +326,14 @@ function updateDeleteStudents() {
         }
       }
     });
-    if (alwaysRostering.dryRun) {
-      casper.echo("Dry run option set, not deleting.");
-    } else {
-      //TODO: Implement student deletes
+    if (deletes.length !== 0) {
+      if (alwaysRostering.dryRun) {
+        casper.echo("Dry run option set, not deleting.");
+      } else {
+        casper.evaluate(function(deletes) {
+          studentRequests.del(deletes);
+        }, deletes);
+      }
     }
   });
 }
@@ -332,6 +342,8 @@ function addStudents() {
   casper.then(function() {
     var student = {};
     var studentID;
+    var addInfo;
+    var grade;
 
     for (studentID in alwaysRostering.studentInfo) {
       student = alwaysRostering.studentInfo[studentID];
@@ -340,7 +352,22 @@ function addStudents() {
         if (alwaysRostering.dryRun) {
           casper.echo("Dry run option set, not adding.");
         } else {
-          //TODO: Implement student adds
+          grade = alwaysRostering.basicGrade(studentID);
+          if (parseInt(grade) > 9) { //Reading Eggs has a maximum grade of 9
+            grade = "9";
+          }
+          addInfo = {
+            firstName: student.firstName,
+            lastName: student.lastName,
+            grade: grade,
+            className: alwaysRostering.hrTeacherFirstLast(studentID),
+            login: alwaysRostering.elementaryUsername(studentID),
+            password: alwaysRostering.elementaryPassword(studentID),
+            studentID: studentID
+          }
+          casper.evaluate(function(addInfo) {
+            studentRequests.add(addInfo);
+          }, addInfo);
         }
       }
     }
@@ -353,7 +380,76 @@ alwaysRostering.init("syncReadingEggs.js");
 /************************* Main Loop ***************************************/
 var username;
 var password;
+var studentIDs;
 
+//Barclay Brook - All K-2 students and teachers
+alwaysRostering.loadStudentReport(["KF", "KH", "1", "2"], ["BBS"]);
+alwaysRostering.loadTeacherReport(["BBS"], ["KF", "KH", "1", "2"]);
+
+//Add Reading Specialist and students
+//This particular teacher requested a list of students and needs them linked
+//to her in ReadingEggs instead of their regular HR teacher
+alwaysRostering.addTeacher("BES", "525");
+studentIDs = ["92462", "87707", "88314", "87545", "87547", "88530", "90687",
+  "87510", "91550", "92434", "89050", "92432", "88459", "89135", "89035",
+  "89113", "89324", "89351", "92410", "88416"];
+alwaysRostering.addStudents(studentIDs);
+studentIDs.forEach(function(studentID) {
+  alwaysRostering.studentInfo[studentID].hrTeacherID = "525"; 
+});
+
+//Add teacher of the Handicapped and students
+alwaysRostering.addTeacher("BES", "562");
+alwaysRostering.addHRTeacherStudents("BES", "562");
+
+//Add HS inclusion teacher
+alwaysRostering.addTeacher("MTHS", "2");
+//get unique students from all the teacher's classes
+alwaysRostering.loadClassReport(["MTHS"]); //need class data for this
+studentIDs = removeDuplicates(
+  alwaysRostering.studentsInClass("MTHS", "1700", "1")
+  .concat(alwaysRostering.studentsInClass("MTHS", "1700", "2"))
+  .concat(alwaysRostering.studentsInClass("MTHS", "1701", "1"))
+  .concat(alwaysRostering.studentsInClass("MTHS", "1701", "2"))
+  .concat(alwaysRostering.studentsInClass("MTHS", "1702", "1"))
+  .concat(alwaysRostering.studentsInClass("MTHS", "1702", "2"))
+);
+//Add them and set the teacher as their HR teacher
+alwaysRostering.addStudents(studentIDs);
+studentIDs.forEach(function(studentID) {
+  alwaysRostering.studentInfo[studentID].hrTeacherID = "2"; 
+});
+
+//Add Special Ed teacher and students
+alwaysRostering.addTeacher("BBS", "434");
+alwaysRostering.addHRTeacherStudents("BBS", "434");
+
+//Add BES teacher who requested addition of one of her students
+alwaysRostering.addTeacher("BES", "593");
+alwaysRostering.addStudents(["88311"]);
+
+username = alwaysRostering.credentials.readingEggs["BBS"].username;
+password = alwaysRostering.credentials.readingEggs["BBS"].password;
+
+login(username, password);
+setupTeacherPage();
+loadReadingEggsTeacherInfo();
+waitForRequests();
+getReadingEggsTeacherInfo();
+ignoreAdminAccount(username);
+updateDeleteTeachers();
+addTeachers();
+waitForRequests();
+setupStudentPage();
+loadReadingEggsStudentInfo();
+waitForRequests();
+getReadingEggsStudentInfo();
+updateDeleteStudents();
+addStudents();
+waitForRequests();
+
+casper.run();
+/*
 //Mill Lake - All K-2 students and teachers
 alwaysRostering.loadStudentReport(["KF", "KH", "1", "2"], ["MLS"]);
 alwaysRostering.loadTeacherReport(["MLS"], ["KF", "KH", "1", "2"]);
@@ -384,5 +480,5 @@ getReadingEggsStudentInfo();
 updateDeleteStudents();
 addStudents();
 waitForRequests("student");
+*/
 
-casper.run();

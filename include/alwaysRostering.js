@@ -8,19 +8,22 @@ var fs = require("fs");
 exports.dryRun = false;
 exports.studentInfo = {};
 exports.teacherInfo = {};
+exports.classInfo = [];
 exports.credentials = credentials.credentials;
 exports.studentReport;
 exports.teacherReport;
+exports.classReport;
 
 exports.init = function(name) {
   casper.start();
-  if (casper.cli.args.length !== 2) {
+  if (casper.cli.args.length !== 3) {
     casper.echo("Usage is " + name +
-      " [--dry-run] <Student Report> <Teacher Report>");
+      " [--dry-run] <Student Report> <Teacher Report> <Class Report>");
     casper.exit();
   }
   exports.studentReport = casper.cli.args[0];
   exports.teacherReport = casper.cli.args[1];
+  exports.classReport = casper.cli.args[2];
   if (casper.cli.has("dry-run")) {
     exports.dryRun = true;
   }
@@ -31,6 +34,35 @@ exports.init = function(name) {
     this.echo("page.error: " + msg);
     this.exit();
   });
+};
+
+exports.loadClassReport = function(schools) {
+  var content;
+  var parseResults;
+
+  console.log("Loading class report: " + exports.classReport + " Schools: " +
+    JSON.stringify(schools));
+  exports.classInfo = [];
+  content = fs.read(exports.classReport);
+  parseResults = Papa.parse(content, {header: true, skipEmptyLines: true});
+  parseResults.data.forEach(function(line) {
+    if (schools.indexOf(line.schoolCode) != -1) {
+      exports.classInfo.push(line);
+    }
+  });
+};
+
+exports.studentsInClass = function(school, course, section) {
+  var studentIDs = [];
+
+  exports.classInfo.forEach(function(entry) {
+    if ((entry.schoolCode === school) &&
+        (entry.courseCode === course) &&
+        (entry.courseSection === section)) {
+      studentIDs.push(entry.studentID);
+    }
+  });
+  return studentIDs;
 };
 
 //FIXME: Swap schools and grades order in arguments to be consistent with
@@ -49,7 +81,6 @@ exports.loadStudentReport = function(grades, schools) {
     if ((schools.indexOf(data[i].schoolCode) != -1) &&
         (grades.indexOf(data[i].grade) != -1)) {
       studentID = data[i].id;
-      delete data[i].id;
       hash[studentID] = data[i]; 
     }
   }
@@ -77,11 +108,32 @@ exports.addHRTeacherStudents = function(school, teacherID) {
   parseResults.data.forEach(function(line) {
     if ((line.schoolCode === school) && (line.hrTeacherID === teacherID)) {
       studentID = line.id;
-      delete line.id;
       exports.studentInfo[studentID] = line;
     }
   });
 };
+
+//Internal function that takes care of some issues we have with the teacher
+//report data
+function cleanTeacherLine(line) {
+  var gradeLevel;
+  var last;
+
+  //We have to remove leading zeros from gradeLevel
+  gradeLevel = line.gradeLevel.replace(/^0+/, "");
+  line.gradeLevel = gradeLevel;
+
+  //Trim the AM/PM from the end of kindergarten/preschool teacher's names
+  if ((line.gradeLevel === "KH") ||
+      (line.gradeLevel === "KF") ||
+      (line.gradeLevel === "4H") ||
+      (line.gradeLevel === "4F")) { 
+    last = line.lastName.replace(/ PM$| AM$/, "");
+    line.lastName = last;
+  }
+
+  return line;
+}
 
 //this loads a teacher report and OVERWRITES any previous data
 exports.loadTeacherReport = function(schools, grades) {
@@ -92,16 +144,15 @@ exports.loadTeacherReport = function(schools, grades) {
   var i;
   var teacherID;
   var gradeLevel;
+  var last;
 
   casper.echo("Loading teacher report: " + exports.teacherReport + " Schools: "
               + JSON.stringify(schools) + " Grades: " +
               JSON.stringify(grades));
   content = fs.read(exports.teacherReport);
   parseResults = Papa.parse(content, {header: true, skipEmptyLines: true});
-  parseResults.data.forEach(function(line) {
-    //We have to remove leading zeros from gradeLevel in the teacher report
-    gradeLevel = line.gradeLevel.replace(/^0+/, "");
-    line.gradeLevel = gradeLevel;
+  parseResults.data.forEach(function(origLine) {
+    line = cleanTeacherLine(origLine);
     if (schools) {
       if (schools.indexOf(line.schoolCode) === -1) {
         return;
@@ -120,26 +171,53 @@ exports.loadTeacherReport = function(schools, grades) {
 
 //Adds a teacher to teacherInfo. This is useful if you have extra teachers
 //from other buildings/grades who may need their students rostered
-exports.addTeacher = function(teacherID) {
+//note that teachers may be repeated in the report if they are in multiple
+//building, so a schoolCode should be specified
+exports.addTeacher = function(schoolCode, teacherID) {
   var content;
   var parseResults;
   var notFound = true;
+  var gradeLevel;
+  var last;
 
   content = fs.read(exports.teacherReport);
-  parseResults = Papa.parse(content, {header: true});
-  parseResults.data.forEach(function(line) {
+  parseResults = Papa.parse(content, {header: true, skipEmptyLines: true});
+  parseResults.data.forEach(function(origLine) {
+    line = cleanTeacherLine(origLine);
+    if (schoolCode !== line.schoolCode) {
+        return;
+    }
     if (teacherID === line.id) {
-      delete line.id;
       exports.teacherInfo[teacherID] = line;
-      console.log("Adding " + line.firstName + " " + line.lastName +
-                  " to teacherInfo");
+      casper.echo("Adding teacher " + line.firstName + " " + line.lastName + " "
+        + schoolCode + " to teacherInfo.");
       notFound = false;
     }
   });
   if (notFound) {
-    casper.echo("addTeacher: Unable to load info for teacherID " + teacherID);
+    capser.echo("addTeacher: Unable to load info for teacherID " + teacherID +
+      " " + schoolCode);
     casper.exit();
   }
+};
+
+//Adds a group of students to studentInfo
+//takes an array of studentIDs
+exports.addStudents = function(studentIDs) {
+  var content;
+  var parseResults;
+
+  content = fs.read(exports.studentReport);
+  parseResults = Papa.parse(content, {header: true, skipEmptyLines: true});
+  studentIDs.forEach(function(studentID) {
+    parseResults.data.forEach(function(line) {
+      if (line.id === studentID) {
+        exports.studentInfo[studentID] = line;
+        casper.echo("Adding student " + line.id + " " + line.firstName + " " +
+          line.lastName + " to studentInfo.");
+      }
+    });
+  });
 };
 
 exports.jsonPost = function(url, data) {
@@ -225,7 +303,7 @@ exports.elementaryUsername = function(studentID) {
       return "wl" + studentID;
     case "BBS":
       return "bb" + studentID;
-    case "BSE":
+    case "BES":
       return "bs" + studentID;
     case "OTS":
       return "ot" + studentID;
@@ -233,6 +311,8 @@ exports.elementaryUsername = function(studentID) {
       return "ag" + studentID;
     case "AMS":
       return "ms" + studentID;
+    case "MTHS":
+      return "hs" + studentID;
     default:
       casper.echo("elementaryUsername: Unknown School Code: " + schoolCode);
       casper.exit();
@@ -251,7 +331,7 @@ exports.elementaryPassword = function(studentID) {
       return "wl123456";
     case "BBS":
       return "bb123456";
-    case "BSE":
+    case "BES":
       return "bs123456";
     case "OTS":
       return "ot123456";
@@ -259,6 +339,8 @@ exports.elementaryPassword = function(studentID) {
       return "ag123456";
     case "AMS":
       return "ms123456";
+    case "MTHS":
+      return "hs123456";
     default:
       casper.echo("elementaryPassword: Unknown school code: " + schoolCode);
       casper.exit();
@@ -346,13 +428,10 @@ exports.needsUpdate = function(comparisons, studentID) {
 
 //returns "FirstName LastName" for a homeroom teacher
 //will return the FIRST real teacher if the homeroom teacher is a shared teacher
-//will chop the PM/AM off the end of a kindergarten teachers name
 exports.hrTeacherFirstLast = function(studentID) {
   var teacherID;
   var teacher;
   var grade;
-  var firstName;
-  var lastName;
   var newID;
 
   teacherID = exports.studentInfo[studentID].hrTeacherID;
@@ -371,16 +450,7 @@ exports.hrTeacherFirstLast = function(studentID) {
     }
     teacher = exports.teacherInfo[newID];
   }
-  firstName = teacher.firstName;
-  switch (grade) {
-    case "KH":
-    case "KF":
-      lastName = teacher.lastName.replace(/ PM$| AM$/, ""); 
-    break;
-    default:
-      lastName = teacher.lastName;
-  }
-  return firstName + " " + lastName;
+  return teacher.firstName + " " + teacher.lastName;
 };
 
 //See if we can find a student by first and last name. Ignores beginning
@@ -403,9 +473,11 @@ exports.lookupStudent = function(firstName, lastName) {
 exports.lookupTeacher = function(firstName, lastName) {
   var teacherID;
   var teacher;
+  var first;
+  var last; 
 
   for (teacherID in exports.teacherInfo) {
-    teacher = exports.teacherInfo[teacherID]; 
+    teacher = exports.teacherInfo[teacherID];
     if ((teacher.firstName === firstName) && (teacher.lastName === lastName)
         && (teacher.sharedTeacher === "N")) {
       return teacherID;

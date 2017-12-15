@@ -67,11 +67,6 @@ teacherRequests.edit = function(teacher) {
   queue.add($.ajax, ajaxSettings);
 }
 
-teacherRequests.delCallback = function(data, ids) {
-  this.requestsRemaining--;
-  console.log("Deleting " + ids + ": " + this.parseInfo(data));
-}
-
 teacherRequests.del = function(ids) {
   var postData = {
     utf8: "",

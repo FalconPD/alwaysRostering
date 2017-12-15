@@ -1,6 +1,20 @@
 var queue = new Limit(100);
 studentRequests = new Requests();
 
+//Grade position and class id lists are on the students page so we can use them
+//to look up these values
+studentRequests.lookupGradePosition = function(grade) {
+  return $("#student_grade_position option:contains('" + grade + "')")
+    .filter(function() { return ($(this).text() === grade); })
+    .val();
+};
+
+studentRequests.lookupClassID = function(className) {
+  return $("#student_school_class_id option:contains('" + className + "')")
+    .filter(function() { return ($(this).text() === className); })
+    .val();
+};
+      
 studentRequests.loadCallback = function(data, student) {
       var $data
 
@@ -50,14 +64,8 @@ studentRequests.edit = function(student) {
     authenticity_token: this.authenticity_token,
     "student[first_name]": student.firstName,
     "student[last_name]": student.lastName,
-    //Grade position and class id lists are on the students page so
-    //we can use them to look up these values
-    "student[grade_position]":
-      $("#student_grade_position option:contains('" + student.grade +
-        "')").val(),
-    "student[school_class_id]":
-      $("#student_school_class_id option:contains('" + student.className +
-        "')").val(),
+    "student[grade_position]": this.lookupGradePosition(student.grade),
+    "student[school_class_id]": this.lookupClassID(student.className),
     "student[login]": student.login,
     "student[password]": student.password,
     "student[password_confirmation]": student.password,
@@ -77,25 +85,24 @@ studentRequests.edit = function(student) {
   this.requestsRemaining++;
   queue.add($.ajax, ajaxSettings);
 };
-/*
-teacherRequests.delCallback = function(data, ids) {
-  this.requestsRemaining--;
-  console.log("Deleting " + ids + ": " + this.parseInfo(data));
-}
 
-teacherRequests.del = function(ids) {
+studentRequests.del = function(ids) {
   var postData = {
     utf8: "",
     _method: "patch",
     authenticity_token: this.authenticity_token,
-    operation: "remove_teachers",
-    "teacher_ids[]": ids 
+    school_class_id: "",
+    operation: "delete",
+    password: "",
+    password_confirmation: "",
+    grade_position: "", 
+    "student_ids[]": ids 
   };
   var ajaxSettings = {
     type: "POST",
-    url: "https://app.readingeggs.com/re/school/teachers",
+    url: "https://app.readingeggs.com/re/school/student_body",
     data: postData,
-    success: function(data) { teacherRequests.delCallback(data, ids); }, 
+    success: function(data) { studentRequests.delCallback(data, ids); }, 
     error: this.errorCallback
   };
       
@@ -103,32 +110,45 @@ teacherRequests.del = function(ids) {
   queue.add($.ajax, ajaxSettings);
 }
 
-teacherRequests.addCallback = function(data, teacher) {
+studentRequests.addCallback = function(data, student) {
+  var $data;
+  var id;
+  var $tr;
+
   this.requestsRemaining--;
-  console.log("Adding " + teacher.firstName + " " + teacher.lastName + ": " +
+  console.log("Adding " + student.firstName + " " + student.lastName + ": " +
     this.parseInfo(data));
+  //Adding is actually two steps: An add, then an edit to set login, password,
+  //and studentID
+  $data = $(data);
+  $tr = $data.find("tr.student")
+    .has("td.first_name:contains(" + student.firstName + ")")
+    .has("td.last_name:contains(" + student.lastName + ")")
+    .has("td.grade_name:contains(" + student.grade + ")")
+    .has("td.teacher_names:contains(" + student.className + ")");
+  if ($tr.length) {
+    student.readingEggsID = $tr.attr("id").slice(8);
+    this.edit(student);
+  }
 };
 
-teacherRequests.add = function(teacher) {
+studentRequests.add = function(student) {
   var postData = {
     utf8: "",
-    "teacher[first_name]": teacher.firstName,
-    "teacher[last_name]": teacher.lastName,
-    "teacher[email]": teacher.email,
-    "teacher[email_confirmation]": teacher.email,
-    account_type: "no_trial",
-    commit: "Create+Teacher"
+    authenticity_token: this.authenticity_token,
+    "student[first_name]": student.firstName,
+    "student[last_name]": student.lastName,
+    "student[grade_position]": this.lookupGradePosition(student.grade),
+    "student[school_class_id]": this.lookupClassID(student.className)
   };
   var ajaxSettings = {
     type: "POST",
-    url: "https://app.readingeggs.com/re/school/teachers",
+    url: "https://app.readingeggs.com/re/school/students",
     data: postData,
-    success: function(data) {
-      teacherRequests.addCallback(data, teacher);
-    },
+    success: function(data) { studentRequests.addCallback(data, student); },
     error: this.errorCallback
   };
 
   this.requestsRemaining++;
   queue.add($.ajax, ajaxSettings);
-};*/
+};
