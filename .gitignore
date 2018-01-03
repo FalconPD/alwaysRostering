@@ -2,3 +2,4 @@ include/credentials.js
 *.swp
 *.swo
 reports/*
+MAP/rosters/*

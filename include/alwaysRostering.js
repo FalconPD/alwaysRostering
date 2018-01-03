@@ -5,37 +5,43 @@ var Papa = require("./papaparse");
 var require = patchRequire(require);
 var fs = require("fs");
 
-exports.dryRun = false;
 exports.studentInfo = {};
 exports.teacherInfo = {};
 exports.classInfo = [];
+exports.schoolInfo = {};
 exports.credentials = credentials.credentials;
-exports.studentReport;
-exports.teacherReport;
-exports.classReport;
+exports.studentReport = "../reports/students.csv";
+exports.teacherReport = "../reports/teachers.csv";
+exports.classReport = "../reports/classes.csv";
+exports.schoolReport = "../reports/schools.csv";
 
-exports.init = function(name) {
-  casper.start();
-  if (casper.cli.args.length !== 3) {
-    casper.echo("Usage is " + name +
-      " [--dry-run] <Student Report> <Teacher Report> <Class Report>");
-    casper.exit();
-  }
-  exports.studentReport = casper.cli.args[0];
-  exports.teacherReport = casper.cli.args[1];
-  exports.classReport = casper.cli.args[2];
-  if (casper.cli.has("dry-run")) {
-    exports.dryRun = true;
-  }
-  casper.on('remote.message', function(message) {
-    this.echo("remote.message: " + message);
-  });
-  casper.on("page.error", function(msg, trace) {
-    this.echo("page.error: " + msg);
-    this.exit();
+casper.start();
+
+exports.dryRun = false;
+if (casper.cli.has("dry-run")) {
+  exports.dryRun = true;
+}
+casper.on('remote.message', function(message) {
+  this.echo("remote.message: " + message);
+});
+casper.on("page.error", function(msg, trace) {
+  this.echo("page.error: " + msg);
+  this.exit();
+});
+
+exports.loadSchoolReport = function() {
+  var content;
+  var parseResults;
+
+  console.log("Loading school report");
+  exports.schoolInfo = {};
+  content = fs.read(exports.schoolReport);
+  parseResults = Papa.parse(content, {header: true, skipEmptyLines: true});
+  parseResults.data.forEach(function(line) {
+    exports.schoolInfo[line.schoolCode] = line;
   });
 };
-
+  
 exports.loadClassReport = function(schools) {
   var content;
   var parseResults;
@@ -65,11 +71,9 @@ exports.studentsInClass = function(school, course, section) {
   return studentIDs;
 };
 
-//FIXME: Swap schools and grades order in arguments to be consistent with
-//loadTeacherReport
 //Returns hash with the key being Student ID for quick lookups
 //takes the an array of grades, and an array of schools
-exports.loadStudentReport = function(grades, schools) {
+exports.loadStudentReport = function(schools, grades) {
   console.log("Loading student report: " + exports.studentReport + " Grades: " +
               JSON.stringify(grades) + " Schools: " + JSON.stringify(schools));
   var content = fs.read(exports.studentReport);
@@ -124,11 +128,19 @@ function cleanTeacherLine(line) {
   line.gradeLevel = gradeLevel;
 
   //Trim the AM/PM from the end of kindergarten/preschool teacher's names
+  //but make sure we store the info
+  line.half = "";
   if ((line.gradeLevel === "KH") ||
       (line.gradeLevel === "KF") ||
       (line.gradeLevel === "4H") ||
-      (line.gradeLevel === "4F")) { 
-    last = line.lastName.replace(/ PM$| AM$/, "");
+      (line.gradeLevel === "4F")) {
+    if (/\s+PM$/.test(line.lastName)) {
+      line.half = "PM";
+    }
+    else if (/\s+AM$/.test(line.lastName)) {
+      line.half = "AM";
+    }
+    last = line.lastName.replace(/\s+PM$|\s+AM$/, "");
     line.lastName = last;
   }
 
@@ -153,12 +165,12 @@ exports.loadTeacherReport = function(schools, grades) {
   parseResults = Papa.parse(content, {header: true, skipEmptyLines: true});
   parseResults.data.forEach(function(origLine) {
     line = cleanTeacherLine(origLine);
-    if (schools) {
+    if (schools.length > 0) {
       if (schools.indexOf(line.schoolCode) === -1) {
         return;
       }
     }
-    if (grades) {
+    if (grades.length > 0) {
       if (grades.indexOf(line.gradeLevel) === -1) {
         return;
       }
@@ -371,6 +383,20 @@ exports.teacherEmail = function(teacherID) {
   return email.replace(/[ \']/g, "");
 }
 
+exports.studentEmail = function(studentID) {
+  var student;
+  var email;
+  
+  student = exports.studentInfo[studentID];
+  if (student.networkID === "") {
+    return "";
+  }
+  else {
+    email = student.networkID + "@students.monroe.k12.nj.us";
+    return email;
+  }
+};
+
 //Creates and elementary teacher password in Eliot's format
 exports.elementaryTeacherPassword = function(teacherID) {
   var schoolCode;
@@ -481,6 +507,18 @@ exports.lookupTeacher = function(firstName, lastName) {
     if ((teacher.firstName === firstName) && (teacher.lastName === lastName)
         && (teacher.sharedTeacher === "N")) {
       return teacherID;
+    }
+  }
+  return false;
+};
+
+exports.getSchoolByName = function(name) {
+  var school;
+
+  for (schoolCode in exports.schoolInfo) {
+    school = exports.schoolInfo[schoolCode];
+    if (school.schoolName === name) {
+      return school;
     }
   }
   return false;
