@@ -13,7 +13,6 @@ var casper = require("casper").create({
     "requests.js"
   ]
 });
-var utils = require("utils");
 var alwaysRostering = require("../include/alwaysRostering");
 var readingEggsStudentInfo = [];
 var readingEggsTeacherInfo = [];

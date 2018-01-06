@@ -10,10 +10,10 @@ exports.teacherInfo = {};
 exports.classInfo = [];
 exports.schoolInfo = {};
 exports.credentials = credentials.credentials;
-exports.studentReport = "../reports/students.csv";
-exports.teacherReport = "../reports/teachers.csv";
-exports.classReport = "../reports/classes.csv";
-exports.schoolReport = "../reports/schools.csv";
+exports.studentReport = "../Genesis/reports/students.csv";
+exports.teacherReport = "../Genesis/reports/teachers.csv";
+exports.classReport = "../Genesis/reports/classes.csv";
+exports.schoolReport = "../Genesis/reports/schools.csv";
 
 casper.start();
 

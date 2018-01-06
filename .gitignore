@@ -1,5 +1,5 @@
 include/credentials.js
 *.swp
 *.swo
-reports/*
 MAP/rosters/*
+Genesis/reports/*
