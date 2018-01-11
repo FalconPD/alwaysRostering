@@ -1,6 +1,6 @@
 "use strict";
 
-var Papa = require("../include/papaparse");
+var Papa = require("../../include/papaparse");
 var require = patchRequire(require);
 var fs = require("fs");
 var utils = require("utils");

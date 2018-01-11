@@ -1,6 +1,6 @@
 "user strict";
 
-var Papa = require("../include/papaparse");
+var Papa = require("../../include/papaparse");
 var fs = require("fs");
 
 var additionalUsers = [];

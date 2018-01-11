@@ -1,6 +1,5 @@
 // This CasperJS module includes common functions used when
 // syncing subscription websites with data from the SiS
-var credentials = require("./credentials");
 var Papa = require("./papaparse");
 var require = patchRequire(require);
 var fs = require("fs");
@@ -9,7 +8,7 @@ exports.studentInfo = {};
 exports.teacherInfo = {};
 exports.classInfo = [];
 exports.schoolInfo = {};
-exports.credentials = credentials.credentials;
+exports.credentials = JSON.parse(fs.read("../include/credentials.json"));
 exports.studentReport = "../Genesis/reports/students.csv";
 exports.teacherReport = "../Genesis/reports/teachers.csv";
 exports.classReport = "../Genesis/reports/classes.csv";

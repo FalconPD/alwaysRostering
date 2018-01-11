@@ -1,5 +1,6 @@
-include/credentials.js
+include/credentials.json
 *.swp
 *.swo
 MAP/rosters/*
 Genesis/reports/*
+__pycache__/
