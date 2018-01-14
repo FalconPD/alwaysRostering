@@ -4,3 +4,4 @@ include/credentials.json
 MAP/rosters/*
 Genesis/reports/*
 __pycache__/
+python/db/*
