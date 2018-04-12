@@ -5,6 +5,7 @@ import AR.AR as AR
 import AR.schoology as schoology
 import click
 import pprint
+import re
 
 pp=pprint.PrettyPrinter()
 
@@ -26,7 +27,7 @@ def sync(db_file, debug):
 
     print('Creating user sets...')
 
-    # Load all K-12, in-district students 
+    # Load all K-12, in-district, active students 
     grade_levels = ['KH', 'KF', '01', '02', '03', '04', '05', '06', '07', '08',
         '09', '10', '11', '12']
     schools = ['AES', 'AMS', 'BBS', 'BES', 'MLS', 'MTHS', 'OTS', 'WLS'] 
@@ -39,12 +40,15 @@ def sync(db_file, debug):
     )
     student_ids = {student.student_id for student in query}
 
-    # Load the real, active staff with their job role
+    # Load the real, active, confiured staff with their job role
+    # NOTE: Staff will have to have their state_id_number and data_1
+    # (network id) set
     query = (
             db_session.query(DistrictTeacher, StaffJobRole)
             .filter(DistrictTeacher.employment_status == 'A')
             .filter(DistrictTeacher.shared_teacher  == False)
             .filter(DistrictTeacher.state_id_number != '')
+            .filter(DistrictTeacher.data_1 != '')
             .join(StaffJobRole)
     )
 
@@ -95,14 +99,62 @@ def sync(db_file, debug):
         len(student_ids), len(teacher_ids), len(admin_ids), 
         len(sysadmin_ids)))
 
-#    users = { 'users': { 'user': [] }}
-#    for student_id in student_ids:
-#    print("Getting current users in Schoology...")
-#    schoology_users = schoology.get_users()
+    # Create a list of Schoology user objects from each set
+    users = []
+    for teacher_id in teacher_ids:
+        teacher = (
+            db_session.query(DistrictTeacher)
+            .filter(DistrictTeacher.teacher_id == teacher_id)
+            .first()
+        )
 
-    user = schoology.create_user_object(school_uid='TEST', name_first='Test',
-        name_last='User', email='rtolboom@monroe.k12.nj.us',
-        role='System Admin')
-    pp.pprint(user)
+        # Clean the Genesis data if needed
+
+        # Teacher names may be improperly capitalized and kindergarten teachers
+        # may have AM/PM after their name
+        name_first = teacher.teacher_first_name
+        name_last = re.sub(r' (AM|PM)$', '', teacher.teacher_last_name, count=1)
+        if name_first.isupper():
+            name_first = name_first.title()
+        if name_last.isupper():
+            name_last = name_last.title()
+        if (name_first != teacher.teacher_first_name) or (name_last != teacher.teacher_last_name):
+            logging.warning('[{}] Correcting name: {} {} -> {} {}'
+                .format(teacher_id, teacher.teacher_first_name,
+                teacher.teacher_last_name, name_first, name_last))
+
+        # Teacher emails may be the long form
+        # FirstName.LastName@monroe.k12.nj.us instead of
+        # network_id@monroe.k12.nj.us. We want the short one as it is
+        # guaranteed to be unique.  Also, it should be lowercase.
+        email = teacher.data_1.lower() + '@monroe.k12.nj.us'
+        if email != teacher.teacher_email:
+            logging.warning('[{}] Correcting email: {} -> {}'.format(teacher_id,
+                teacher.teacher_email, email))
+
+        user = schoology.create_user_object(
+            school_uid=teacher_id,
+            email=email,
+            name_first=name_first,
+            name_last=name_last,
+            role='Teacher'
+        )
+        users.append(user)
+
+    user_responses = schoology.bulk_create_update(users)
+    for user_response in user_responses:
+        if user_response['response_code'] != 200:
+            if 'school_uid' in user_response:
+                teacher = (
+                    db_session.query(DistrictTeacher)
+                    .filter(DistrictTeacher.teacher_id == user_response['school_uid'])
+                    .first()
+                )
+                print('[{}] {} {} {}'.format(teacher.teacher_id,
+                    teacher.teacher_first_name, teacher.teacher_last_name,
+                    user_response['message']))
+            else:
+                pp.pprint(user_response)
+
 if __name__ == '__main__':
     sync()

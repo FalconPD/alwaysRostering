@@ -7,6 +7,9 @@ import uuid
 import time
 import requests
 import http.client
+import pprint
+
+pp=pprint.PrettyPrinter()
 
 baseURL = "https://api.schoology.com/v1/"
 credentials = json.load(open('../include/credentials.json'))
@@ -18,6 +21,12 @@ roles = None
 #requests_log = logging.getLogger("requests.packages.urllib3")
 #requests_log.setLevel(logging.DEBUG)
 #requests_log.propagate = True
+
+def chunks(starting_list, chunk_size):
+    """Break a list into smaller lists of size n"""
+
+    for i in range(0, len(starting_list), chunk_size):
+        yield starting_list[i:i + chunk_size]
 
 def init():
     global roles
@@ -66,7 +75,7 @@ def get_users(roles=[]):
 
 def get_roles():
     """Downloads all of the roles from Schoology"""
-    r = requests.get(baseURL + "roles", headers=create_header())
+    r = requests.get(baseURL + 'roles', headers=create_header())
     r.raise_for_status()
     return r.json()
 
@@ -83,3 +92,13 @@ def create_user_object(school_uid, name_first, name_last, email, role):
 def bulk_create_update(users):
     """Uses the bulk create API call to take a list of users and
     create/update them 50 at a time"""
+
+    params = { 'update_existing': 1 }
+    user_responses = []
+    for user_chunk in chunks(users, 50):
+        json_data = { 'users': { 'user': user_chunk } }
+        r = requests.post(baseURL + 'users', json=json_data, headers=create_header(),
+            params=params)
+        r.raise_for_status()
+        user_responses += r.json()['user']
+    return user_responses
