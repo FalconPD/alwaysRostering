@@ -1,33 +1,8 @@
 #Role Assignments in Schoology
 
-A user in Schoology can be either a Teacher, System Admin, Student, or Parent. Staff are broken down by Genesis job code as follows: 
+A user in Schoology can be either a Teacher, Admin, System Admin, Student or Parent. Staff are broken down as follows: 
 
-##System Admins
-
-* 0102: Superintendent
-* 0122: Assistant Superintendent
-* 0201: High School Principal
-* 0202: Assistant High School Principal
-* 0221: Middle School Principal
-* 0222: Assistant Middle School Principal
-* 0231: Elementary School Principal
-* 0232: Assistant Elementary Principal
-* 0306: Supervisor PPS
-* 0310: Supervisor Athletics
-* 0312: Supervisor Art 
-* 0314: Supervisor English
-* 0315: Supervisor Foreign Languages
-* 0319: Supervisor Mathematics
-* 0321: Supervisor Music
-* 0322: Supervisor Science
-* 0324: Supervisor Special Education
-* 0399: Supervisor Special Projects
-* 0524: Director Special Ed
-* 2410: Teacher Coach
-* 9000: Professional Staff
-* 9200: Technicians
-
-##Teachers
+##Teacher (by job code)
 
 * 1001: Elementary Kindergarten - 8th Grade
 * 1003: Kindergarten
@@ -83,3 +58,32 @@ A user in Schoology can be either a Teacher, System Admin, Student, or Parent. S
 * 2401: Supplementary Instruction (Pull-Out)
 * 2405: Resource Program In-Class
 * 2406: Resource Program Pull-Out Support
+
+##Admin (by job code)
+
+* 0102: Superintendent
+* 0122: Assistant Superintendent
+* 0201: High School Principal
+* 0202: Assistant High School Principal
+* 0221: Middle School Principal
+* 0222: Assistant Middle School Principal
+* 0231: Elementary School Principal
+* 0232: Assistant Elementary Principal
+* 0306: Supervisor PPS
+* 0310: Supervisor Athletics
+* 0312: Supervisor Art 
+* 0314: Supervisor English
+* 0315: Supervisor Foreign Languages
+* 0319: Supervisor Mathematics
+* 0321: Supervisor Music
+* 0322: Supervisor Science
+* 0324: Supervisor Special Education
+* 0399: Supervisor Special Projects
+* 0524: Director Special Ed
+* 2410: Teacher Coach
+
+##System Admin (by job code and manually configured)
+
+* 9200: Technicians
+* Director of Information Technology
+* Educational Technology Facilitator
