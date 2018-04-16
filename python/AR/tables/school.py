@@ -400,3 +400,6 @@ class School(Base):
             use_subsection_descriptions     = utils.genesis_to_boolean(row[127]),
             is_vocational                   = utils.genesis_to_boolean(row[128])
         )
+
+    def __repr__(self):
+        return '{} {}'.format(self.building_code, self.school_name)

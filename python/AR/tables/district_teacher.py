@@ -313,3 +313,31 @@ class DistrictTeacher(Base):
             years_of_prior_exp          = row[97],
             teacher_zipcode             = row[98]
         )
+
+    def __repr__(self):
+        return '{} {} {}'.format(self.teacher_id, self.teacher_first_name, self.teacher_last_name)
+
+    # Staff first names may be improperly capitalized
+    @property
+    def first_name(self):
+        if self.teacher_first_name.isupper():
+            logging.warning('{} has all uppercase first name'.format(self))
+            return self.teacher_first_name.title()
+
+    # Staff last names may be improperly capitalized and half day
+    # kindergarten teachers may have AM/PM after their last name
+    @property
+    def last_name(self):
+        name_last = re.sub(r' (AM|PM)$', '', self.teacher_last_name, count=1)
+        if name_last.isupper():
+            logging.warning('{} has all uppercase last name'.format(self))
+            return name_last.title()
+
+    # The preferred staff email is data_1 (user_id) @monroe.k12.nj.us
+    # The user_id is guaranteed unique. Also, it should be lowercase
+    @property
+    def email(self):
+        if self.data_1 == '':
+            logging.warning('{} does not have a user_id (data_1)'.format(self))
+            return None
+        return self.data_1.lower() + '@monroe.k12.nj.us'

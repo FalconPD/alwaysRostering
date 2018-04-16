@@ -14,6 +14,8 @@ pp=pprint.PrettyPrinter()
 baseURL = "https://api.schoology.com/v1/"
 credentials = json.load(open('../include/credentials.json'))
 roles = None
+buildings = None
+school_id = None
 
 #http.client.HTTPConnection.debuglevel = 1
 #logging.basicConfig()
@@ -29,16 +31,26 @@ def chunks(starting_list, chunk_size):
         yield starting_list[i:i + chunk_size]
 
 def init():
-    global roles
+    global roles, school_id, buildings
 
     roles = get_roles()
+    # We only have 1 school 'Monroe Township Schools'
+    school_id = get_schools()['school'][0]['id']
+    # inside this school we have lots of buildings...
+    buildings = get_buildings()
 
 def lookup_role_id(title):
-    for role in roles["role"]:
+    for role in roles['role']:
         if role['title'] == title:
             return role['id']
-    logging.error("Unable to lookup role: {}".format(title))
+    logging.error('Unable to lookup role: {}'.format(title))
     exit(1)
+
+def lookup_building_id(building_code):
+    for building in buildings['building']:
+        if building['building_code'] == building_code:
+            return building['id']
+    return None
 
 def create_header():
     return {
@@ -79,6 +91,18 @@ def get_roles():
     r.raise_for_status()
     return r.json()
 
+def get_buildings():
+    """Downloads all of the buildings from Schoology"""
+    r = requests.get(baseURL + 'schools/' + school_id + '/buildings', headers=create_header())
+    r.raise_for_status()
+    return r.json()
+
+def get_schools():
+    """Downloads all of the schools from Schoology"""
+    r = requests.get(baseURL + 'schools', headers=create_header())
+    r.raise_for_status()
+    return r.json()
+
 def create_user_object(school_uid, name_first, name_last, email, role):
     """Returns a user object based on the arguments given"""
     return {
@@ -86,19 +110,48 @@ def create_user_object(school_uid, name_first, name_last, email, role):
         'name_first': name_first,
         'name_last': name_last,
         'primary_email': email,
-        'role_id': lookup_role_id(role)
+        'role_id': lookup_role_id(role),
+        'synced': 1
     }
 
-def bulk_create_update(users):
+def bulk_create_update_users(users):
     """Uses the bulk create API call to take a list of users and
-    create/update them 50 at a time"""
+    create/update them 50 at a time. Yields the results after each request"""
 
     params = { 'update_existing': 1 }
-    user_responses = []
     for user_chunk in chunks(users, 50):
         json_data = { 'users': { 'user': user_chunk } }
         r = requests.post(baseURL + 'users', json=json_data, headers=create_header(),
             params=params)
         r.raise_for_status()
-        user_responses += r.json()['user']
-    return user_responses
+        yield r.json()['user']
+
+def create_update_building(title, building_code, address1='', address2='',
+    city='Monroe Township', state='NJ', postal_code='08831', country='USA',
+    website='', phone='', fax='', picture_url=''):
+    """Looks up a building, if it doesn't exist creates it, otherwise updates
+    its information. Has some built-in defaults for Monroe"""
+
+    json_data = {
+        'title': title,
+        'building_code': building_code,
+        'address1': address1,
+        'address2': address2,
+        'city': city,
+        'state': state,
+        'postal_code': postal_code,
+        'country': country,
+        'website': website,
+        'phone': phone,
+        'fax': fax,
+        'picture_url': picture_url
+    }
+
+    building_id = lookup_building_id(building_code)
+    if (building_id):
+        r = requests.put(baseURL + 'schools/' + building_id, json=json_data,
+            headers=create_header())
+    else:
+        r = requests.post(baseURL + 'schools/' + school_id + '/buildings',
+            json=json_data, headers=create_header())
+    r.raise_for_status()

@@ -1,7 +1,9 @@
 from sqlalchemy import Column, Integer, String, Boolean, BigInteger, Date, DateTime
 from sqlalchemy.orm import relationship
-from AR.tables import Base
-from AR.tables import utils
+from AR.tables import utils, Base, StudentUserText
+import logging
+from sqlalchemy.orm import column_property
+from sqlalchemy import select, func
 
 class Student(Base):
     __tablename__ = 'STUDENTS'
@@ -157,7 +159,8 @@ class Student(Base):
     waive_birthplace_info = Column('WAIVE_BIRTHPLACE_INFO', Boolean, nullable=False)
     year_of_graduation = Column('YEAR_OF_GRADUATION', Integer, nullable=False)
 
-    student_schedule = relationship("StudentSchedule", back_populates='student')
+    student_schedule = relationship('StudentSchedule', back_populates='student')
+    student_user_text = relationship('StudentUserText', back_populates='student')
 
     report_code = '991016'
     csv_header = [
@@ -469,4 +472,26 @@ class Student(Base):
         )
 
     def __repr__(self):
-        return "<Student(student_id={}, first_name={}, last_name={})>".format(self.student_id, self.first_name, self.last_name) 
+        return "{} {} {}".format(self.student_id, self.first_name, self.last_name)
+
+    @property
+    def user_id(self):
+        for user_text in self.student_user_text:
+            if user_text.code == 'USERID':
+                return user_text.value
+        logging.warning('No user_id found for {}'.format(self))
+        return None
+
+    @property
+    def password(self):
+        for user_text in self.student_user_text:
+            if user_text.code == 'PASSWORD':
+                return user_text.value
+        logging.warning('No password found for {}'.format(self))
+        return None
+
+    @property
+    def email(self):
+        if self.user_id:
+            return str(self.user_id) + '@monroe.k12.nj.us'
+        return None

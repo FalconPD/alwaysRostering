@@ -1,9 +1,15 @@
-from sqlalchemy import Column, String, BigInteger, DateTime, orm
+from sqlalchemy import Column, String, BigInteger, DateTime, orm, ForeignKeyConstraint
+from sqlalchemy.orm import relationship
 from AR.tables import Base
 from AR.tables import utils
 
 class StudentUserText(Base):
     __tablename__ = 'STUDENT_USER_TEXT'
+    __table_args__ = (
+        ForeignKeyConstraint(['STUDENT_ID', 'SCHOOL_YEAR'],
+            ['STUDENTS.STUDENT_ID', 'STUDENTS.SCHOOL_YEAR']),
+    )
+
     code = Column('CODE', String(8), nullable=False, primary_key=True)
     created_by_portal_oid = Column('CREATED_BY_PORTAL_OID', BigInteger)
     created_by_task_oid = Column('CREATED_BY_TASK_OID', BigInteger)
@@ -18,6 +24,8 @@ class StudentUserText(Base):
     school_year = Column('SCHOOL_YEAR', String(7), nullable=False, primary_key=True)
     student_id = Column('STUDENT_ID', String(15), nullable=False, primary_key=True)
     value = Column('VALUE', String(255))
+
+    student = relationship('Student', back_populates='student_user_text')
 
     report_code = '991017'
     csv_header = [
@@ -55,3 +63,6 @@ class StudentUserText(Base):
             student_id                  = row[12],
             value                       = row[13]
         )
+
+    def __repr__(self):
+        return "{}: {}".format(self.code, self.value) 

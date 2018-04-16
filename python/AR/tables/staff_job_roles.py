@@ -102,3 +102,7 @@ class StaffJobRole(Base):
             teacher_id                  = row[25],
             teacher_prep                = row[26]
         )
+
+    def __repr__(self):
+        return '{} {} {}'.format(self.role_seq, self.job_code,
+            self.school_code_assigned) 
