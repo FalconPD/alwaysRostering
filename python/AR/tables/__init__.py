@@ -8,6 +8,7 @@ from AR.tables.school_teacher import SchoolTeacher
 from AR.tables.gradebook_teacher_section import GradebookTeacherSection
 from AR.tables.school import School
 from AR.tables.staff_job_roles import StaffJobRole
+from AR.tables.school_curriculum import SchoolCurriculum
 
 sa_classes = [
     StudentSchedule,
@@ -16,5 +17,6 @@ sa_classes = [
     DistrictTeacher,
     GradebookTeacherSection,
     School,
-    StaffJobRole
+    StaffJobRole,
+    SchoolCurriculum
 ]

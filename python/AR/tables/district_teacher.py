@@ -2,6 +2,8 @@ from sqlalchemy import Column, Integer, String, Boolean, BigInteger, Date, DateT
 from sqlalchemy.orm import relationship
 from AR.tables import Base
 from AR.tables import utils
+import re
+import logging
 
 class DistrictTeacher(Base):
     __tablename__ = 'DISTRICT_TEACHERS'

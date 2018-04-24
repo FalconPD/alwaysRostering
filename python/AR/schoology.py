@@ -8,6 +8,8 @@ import time
 import requests
 import http.client
 import pprint
+import asyncio
+import aiohttp
 
 pp=pprint.PrettyPrinter()
 
@@ -16,28 +18,50 @@ credentials = json.load(open('../include/credentials.json'))
 roles = None
 buildings = None
 school_id = None
+session = None
 
-#http.client.HTTPConnection.debuglevel = 1
-#logging.basicConfig()
-#logging.getLogger().setLevel(logging.DEBUG)
-#requests_log = logging.getLogger("requests.packages.urllib3")
-#requests_log.setLevel(logging.DEBUG)
-#requests_log.propagate = True
+async def handle_status(resp):
+    """Takes a server response and handles errors / warnings"""
 
-def chunks(starting_list, chunk_size):
-    """Break a list into smaller lists of size n"""
+    logging.debug('HTTP {}'.format(resp.status))
 
-    for i in range(0, len(starting_list), chunk_size):
-        yield starting_list[i:i + chunk_size]
+    if 200 <= resp.status < 300: # 2xx Success
+        if resp.status == 207:   # 207 Multi-Status
+            response_json = await resp.json()
+            if 'user' in response_json:
+                for line in response_json['user']:
+                    if line['response_code'] != 200:
+                        logging.warning('HTTP 207: {}'.format(line))
+    elif 300 <= resp.status < 400: # 3xx Redirect
+        logging.warning('HTTP {}'.format(resp.status))
+    elif 400 <= resp.status < 500: # 4xx Error
+        logging.error('HTTP {}'.format(resp.status))
+        exit(1)
+    elif 500 <= resp.status < 600: # 5xx Server Error
+        logging.warning('HTTP {}'.format(resp.status))
+    return resp
 
-def init():
-    global roles, school_id, buildings
+async def init(loop):
+    """Creates an aiohttp session and loads roles, school_id, and buildings for
+    lookups"""
 
-    roles = get_roles()
-    # We only have 1 school 'Monroe Township Schools'
-    school_id = get_schools()['school'][0]['id']
-    # inside this school we have lots of buildings...
-    buildings = get_buildings()
+    global roles, school_id, session
+
+    session = aiohttp.ClientSession(loop=loop)
+
+    # Get roles and school_id info for lookups
+    roles, schools = await asyncio.gather(get_roles(), get_schools())
+    school_id = schools['school'][0]['id']
+    
+    # Get buildings for lookups (requires school_id)
+    await load_buildings()
+
+async def load_buildings():
+    """This wrapper function allows us to reload the buildings after we
+    create/update them"""
+    global buildings
+
+    buildings = await get_buildings()
 
 def lookup_role_id(title):
     for role in roles['role']:
@@ -66,42 +90,49 @@ def create_header():
             'oauth_signature="' + credentials["schoology"]["oauth_signature"] + '%26"'
     }
 
-def get_users(roles=[]):
-    """Returns a list of users, handling paging. You can optionally specify
+async def get_users(roles=[]):
+    """Returns a lists of users one page at a time. You can optionally specify
     the roles you are looking for"""
 
+    logging.debug('Getting users from Schoology')
     params = None
     if len(roles) > 0:
         params = { "role_ids": map(lookup_role_id, roles) }
-    r = requests.get(baseURL + "users", headers=create_header(), params=params)
-    r.raise_for_status()
-    json_response = r.json()
-    users = json_response["user"]
-    while ("next" in json_response["links"]):
-        next_page_url = json_response["links"]["next"]
-        r = requests.get(next_page_url, headers=create_header())
-        r.raise_for_status()
-        json_response = r.json()
-        users += json_response["user"]
-    return users
+    async with session.get(baseURL + "users", headers=create_header(), params=params) as resp:
+        await handle_status(resp)
+        json_response = await resp.json()
+        yield json_response['user']
+    while ('next' in json_response['links']):
+        next_page_url = json_response['links']['next']
+        async with session.get(next_page_url, headers=create_header()) as resp:
+            await handle_status(resp)
+            json_response = await resp.json()
+            yield json_response['user']
 
-def get_roles():
+async def get_roles():
     """Downloads all of the roles from Schoology"""
-    r = requests.get(baseURL + 'roles', headers=create_header())
-    r.raise_for_status()
-    return r.json()
 
-def get_buildings():
+    logging.debug('Getting roles from Schoology')
+    async with session.get(baseURL + 'roles', headers=create_header()) as resp:
+        await handle_status(resp)
+        return await resp.json()
+
+async def get_buildings():
     """Downloads all of the buildings from Schoology"""
-    r = requests.get(baseURL + 'schools/' + school_id + '/buildings', headers=create_header())
-    r.raise_for_status()
-    return r.json()
 
-def get_schools():
+    logging.debug('Getting buildings from Schoology')
+    async with session.get(baseURL + 'schools/' + school_id + '/buildings',
+        headers=create_header()) as resp:
+        await handle_status(resp)
+        return await resp.json()
+
+async def get_schools():
     """Downloads all of the schools from Schoology"""
-    r = requests.get(baseURL + 'schools', headers=create_header())
-    r.raise_for_status()
-    return r.json()
+
+    logging.debug('Getting schools from Schoology')
+    async with session.get(baseURL + 'schools', headers=create_header()) as resp:
+        await handle_status(resp)
+        return await resp.json()
 
 def create_user_object(school_uid, name_first, name_last, email, role):
     """Returns a user object based on the arguments given"""
@@ -114,24 +145,51 @@ def create_user_object(school_uid, name_first, name_last, email, role):
         'synced': 1
     }
 
-def bulk_create_update_users(users):
-    """Uses the bulk create API call to take a list of users and
-    create/update them 50 at a time. Yields the results after each request"""
+async def bulk_create_update_users(users):
+    """Uses the bulk create API call to take a list of users <= 50 and
+    create/update them"""
+
+    logging.debug('Bulk Creating / Updating users in Schoology')
+    if len(users) > 50:
+        logging.error('Too many users for bulk_create_update_users')
+        exit(1)
 
     params = { 'update_existing': 1 }
-    for user_chunk in chunks(users, 50):
-        json_data = { 'users': { 'user': user_chunk } }
-        r = requests.post(baseURL + 'users', json=json_data, headers=create_header(),
-            params=params)
-        r.raise_for_status()
-        yield r.json()['user']
+    json_data = { 'users': { 'user': users } }
+    async with session.post(baseURL + 'users', json=json_data,
+        headers=create_header(), params=params) as resp:
+        await handle_status(resp)
+        response_json = await resp.json()
+        return response_json['user']
 
-def create_update_building(title, building_code, address1='', address2='',
+async def bulk_delete_users(uids, comment='automated delete',
+    keep_enrollments=True, email_notification=False):
+    """Deletes up to 50 users.
+    Defaults: do not notify via email, keeps attendance and grade info, and
+    set comment to 'automated delete'"""
+
+    logging.debug('Bulk deleting users in Schoology')
+    if len(uids) > 50:
+        logging.error('Too many users for bulk_delete_users')
+        exit(1)
+    params = {
+        'uids': ','.join(map(str, uids)),
+        'option_comment': comment,
+        'option_keep_enrollments': '1' if keep_enrollments else '0',
+        'email_notification': '1' if email_notification else '0'
+    }
+    async with session.delete(baseURL + 'users', params=params,
+        headers=create_header()) as resp:
+        await handle_status(resp)
+        return await resp.json()
+
+async def create_update_building(title, building_code, address1='', address2='',
     city='Monroe Township', state='NJ', postal_code='08831', country='USA',
     website='', phone='', fax='', picture_url=''):
     """Looks up a building, if it doesn't exist creates it, otherwise updates
     its information. Has some built-in defaults for Monroe"""
 
+    logging.debug('Creating / Updating {}'.format(title))
     json_data = {
         'title': title,
         'building_code': building_code,
@@ -149,9 +207,12 @@ def create_update_building(title, building_code, address1='', address2='',
 
     building_id = lookup_building_id(building_code)
     if (building_id):
-        r = requests.put(baseURL + 'schools/' + building_id, json=json_data,
-            headers=create_header())
+        async with session.put(baseURL + 'schools/' + building_id,
+            json=json_data, headers=create_header()) as resp:
+            await handle_status(resp)
     else:
-        r = requests.post(baseURL + 'schools/' + school_id + '/buildings',
-            json=json_data, headers=create_header())
-    r.raise_for_status()
+        async with session.post(baseURL + 'schools/' + school_id + '/buildings',
+            json=json_data, headers=create_header()) as resp:
+            await handle_status(resp)
+
+
