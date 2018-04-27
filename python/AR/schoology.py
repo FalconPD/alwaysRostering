@@ -20,6 +20,11 @@ buildings = None
 school_id = None
 session = None
 
+def bulk_length_check(items):
+    if len(items) > 50:
+        logging.error('Too many items for bulk operation')
+        exit(1)
+
 async def handle_status(resp):
     """Takes a server response and handles errors / warnings"""
 
@@ -29,9 +34,14 @@ async def handle_status(resp):
         if resp.status == 207:   # 207 Multi-Status
             response_json = await resp.json()
             if 'user' in response_json:
-                for line in response_json['user']:
-                    if line['response_code'] != 200:
-                        logging.warning('HTTP 207: {}'.format(line))
+                responses = response_json['user']
+            elif 'course' in response_json:
+                responses = response_json['course']
+            elif 'section' in response_json:
+                responses = response_json['section']
+            for line in responses:
+                if line['response_code'] != 200:
+                    logging.warning('HTTP 207: {}'.format(line))
     elif 300 <= resp.status < 400: # 3xx Redirect
         logging.warning('HTTP {}'.format(resp.status))
     elif 400 <= resp.status < 500: # 4xx Error
@@ -146,13 +156,11 @@ def create_user_object(school_uid, name_first, name_last, email, role):
     }
 
 async def bulk_create_update_users(users):
-    """Uses the bulk create API call to take a list of users <= 50 and
+    """Uses the bulk create API call to take a list of users and
     create/update them"""
 
     logging.debug('Bulk Creating / Updating users in Schoology')
-    if len(users) > 50:
-        logging.error('Too many users for bulk_create_update_users')
-        exit(1)
+    bulk_length_check(users)
 
     params = { 'update_existing': 1 }
     json_data = { 'users': { 'user': users } }
@@ -164,14 +172,12 @@ async def bulk_create_update_users(users):
 
 async def bulk_delete_users(uids, comment='automated delete',
     keep_enrollments=True, email_notification=False):
-    """Deletes up to 50 users.
+    """Deletes a bulk amount of users.
     Defaults: do not notify via email, keeps attendance and grade info, and
     set comment to 'automated delete'"""
 
     logging.debug('Bulk deleting users in Schoology')
-    if len(uids) > 50:
-        logging.error('Too many users for bulk_delete_users')
-        exit(1)
+    bulk_length_check(uids)
     params = {
         'uids': ','.join(map(str, uids)),
         'option_comment': comment,
@@ -215,4 +221,111 @@ async def create_update_building(title, building_code, address1='', address2='',
             json=json_data, headers=create_header()) as resp:
             await handle_status(resp)
 
+def create_section_object(title, section_school_code):
+    """Creates a Schoology Course Section object"""
+    
+    return {
+        'title': title,
+        'section_school_code': section_school_code,
+        'grading_periods': [1492074755], #TODO: Setup and pull grading periods from SchoolAttendanceCycle in Genesis
+        'synced': 1
+    }
 
+def create_course_object(building_code, title, course_code, department=None,
+    description=None, credits=None, grades=None, subject=None):
+
+    building_id = lookup_building_id(building_code)
+    if building_id == None:
+        logging.error('Unable to look up building_code {}'.format(building_code))
+        exit(1)
+    course = {
+        'building_id': building_id,
+        'title': title,
+        'course_code': course_code,
+        'synced': 1,
+    }
+    if department != None:
+        course['department'] = department
+    if description != None:
+        course['description'] = description
+    if credits != None:
+        course['credits'] = credits
+    if grades != None:
+        course['credits'] = grades
+    if subject != None:
+        course['subject'] = subject
+    return course
+
+async def bulk_create_update_courses(courses):
+    """Takes a list of courses and create/updates them"""
+
+    logging.debug('Bulk creating /updating courses')
+
+    bulk_length_check(courses)
+
+    params = { 'update_existing': 1 }
+    json_data = { 'courses': { 'course': courses } }
+    async with session.post(baseURL + 'courses/', json=json_data, params=params,
+        headers=create_header()) as resp:
+        await handle_status(resp)
+        return await resp.json()
+
+async def list_pages(next_link):
+    """Generic function for API calls that list things. Yields one page at a
+    time"""
+
+    while next_link != None:
+        async with session.get(next_link, headers=create_header()) as resp:
+            await handle_status(resp)
+            json_response = await(resp.json())
+            yield json_response
+            next_link = json_response['links']['next'] if ('next' in
+                json_response['links']) else None 
+
+async def list_courses(building_code=None):
+    """Lists all the courses. You can optionally specify a building"""
+
+    logging.debug('Listing courses in Schoology')
+
+    # couldnt' figure out a nice, clean way to do this with the params argument
+    url = baseURL + 'courses' 
+    if building_code:
+        building_id = lookup_building_id(building_code)
+        if building_id == None:
+            logging.error('list_courses: Unable to look up building_code {}'
+                .format(building_code))
+            exit(1)
+        url += '?building_id=' + str(building_id)
+
+    async for response in list_pages(url):
+        yield response['course']
+
+async def list_sections(course_id):
+    """Lists all the sections for a given course ID."""
+
+    logging.debug('Listing sections in {}'.format(course_id))
+
+    url = baseURL + 'courses/' + str(course_id) + '/sections'
+
+    async for response in list_pages(url):
+        yield response['section']
+
+async def bulk_delete_courses(course_ids):
+    """Takes a group of course IDs and deletes them"""
+
+    bulk_length_check(course_ids)
+
+    params = { 'course_ids': ','.join(map(str, course_ids)) }
+    async with session.delete(baseURL + 'courses', params=params,
+        headers=create_header()) as resp: 
+        await handle_status(resp)
+
+async def bulk_delete_sections(section_ids):
+    """Takes a group of section IDs and deletes them"""
+
+    bulk_length_check(section_ids)
+
+    params = { 'section_ids': ','.join(map(str, section_ids)) }
+    async with session.delete(baseURL + 'sections', params=params,
+        headers=create_header()) as resp: 
+        await handle_status(resp)

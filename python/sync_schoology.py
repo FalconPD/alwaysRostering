@@ -11,6 +11,32 @@ pp=pprint.PrettyPrinter()
 
 chunk_size = 50
 
+@click.command()
+@click.argument('db_file', type=click.Path(exists=True), metavar='DB_FILE')
+@click.option('--debug', is_flag=True, help='Print debugging statements')
+def main(db_file, debug):
+    """Syncs up Schoology with a Genesis Database
+
+    DB_FILE - A sqlite3 file of the Genesis database"""
+
+    loop = asyncio.get_event_loop()
+
+    if debug:
+        logging.basicConfig(level=logging.DEBUG)
+#        loop.set_debug(True)
+#        http.client.HTTPConnection.debuglevel = 1
+#        logging.basicConfig()
+#        logging.getLogger().setLevel(logging.DEBUG)
+#        requests_log = logging.getLogger("requests.packages.urllib3")
+#        requests_log.setLevel(logging.DEBUG)
+#        requests_log.propagate = True
+    else:
+        logging.basicConfig(level=logging.WARNING)
+
+    loop.run_until_complete(sync(loop=loop, db_file=db_file))
+    loop.close()
+
+
 def create_sysadmin(sysadmin):
     """Takes a DistrictTeacher and returns a Schoology user object"""
 
@@ -88,32 +114,7 @@ async def create_update_users(loop, query, create_function):
         print('{}/{}'.format(completed_users, total_users))
     responses = await asyncio.gather(*tasks)
 
-@click.command()
-@click.argument('db_file', type=click.Path(exists=True), metavar='DB_FILE')
-@click.option('--debug', is_flag=True, help='Print debugging statements')
-def main(db_file, debug):
-    """Syncs up Schoology with a Genesis Database
-
-    DB_FILE - A sqlite3 file of the Genesis database"""
-
-    loop = asyncio.get_event_loop()
-
-    if debug:
-        logging.basicConfig(level=logging.DEBUG)
-#        loop.set_debug(True)
-#        http.client.HTTPConnection.debuglevel = 1
-#        logging.basicConfig()
-#        logging.getLogger().setLevel(logging.DEBUG)
-#        requests_log = logging.getLogger("requests.packages.urllib3")
-#        requests_log.setLevel(logging.DEBUG)
-#        requests_log.propagate = True
-    else:
-        logging.basicConfig(level=logging.WARNING)
-
-    loop.run_until_complete(sync(loop=loop, db_file=db_file))
-    loop.close()
-
-async def sync_buildings(db_session):
+async def sync_buildings():
     """Makes sure our buildings are setup correctly"""
 
     # NOTE: Genesis uses the term 'schools' to refer to the individual
@@ -135,7 +136,7 @@ async def sync_buildings(db_session):
     await asyncio.gather(*tasks)
     await schoology.load_buildings()
 
-def create_user_queries(db_session):
+def create_user_queries():
     """Creates Genesis queries for user group and performs sanity checks"""
 
     print('Creating Genesis queries for users...')
@@ -190,31 +191,89 @@ async def delete_users(all_ids):
         print('{} IDs checked'.format(retrieved))
     await schoology.bulk_delete_users(deletes)
 
-async def sync(loop, db_file):
-    """Syncs up Schoology with a Genesis Database"""
+async def create_user_accounts(loop, students, teachers, admins, sysadmins):
+    """Creates / Updates user accounts for students, teachers, admins, and
+    sysadmins"""
 
-    db_session = AR.init(db_file)
+    print('Creating / Updating students in Schoology...')
+    await create_update_users(loop, students, create_student)
+    print('Creating / Updating teachers in Schoology...')
+    await create_update_users(loop, teachers, create_teacher)
+    print('Creating / Updating admins in Schoology...')
+    await create_update_users(loop, admins, create_admin)
+    print('Creating / Updating sysadmins in Schoology...')
+    await create_update_users(loop, sysadmins, create_sysadmin)
+
+def create_courses():
+    """Returns Schoology course objects based on the AR.courses() query
+    in groups of 50"""
+
+    courses = []    
+    for course in AR.courses():
+        # Create the course
+        schoology_course = schoology.create_course_object(
+            building_code = course.school_code,
+            title = course.course_description,
+            course_code = course.school_code + ' ' + course.course_code
+        )
+
+        # Add in the sections
+        schoology_course['sections'] = { 'section': [] }
+        for section in course.sections:
+            schoology_course['sections']['section'].append(
+                schoology.create_section_object(
+                    title=section.name,
+                    section_school_code=section.section_school_code
+                )
+            )
+
+        # Add it to our list
+        courses.append(schoology_course)
+        if len(courses) == 50:
+            yield courses
+            courses = []
+
+    if len(courses) > 0:
+        yield courses
+
+async def sync_courses():
+    """Creates / updates courses in Schoology. NOTE: This DOES NOT delete
+    courses. If someone makes a special courses for whatever reason, it
+    remains"""
+
+    total = 0;
+    for courses in create_courses():
+        response = await schoology.bulk_create_update_courses(courses)
+        total += len(courses)
+        print('{} courses created / updated'.format(total))
+
+async def sync(loop, db_file):
+    """Performs all steps to sync Schoology with a Genesis Database"""
+
+    AR.init(db_file)
     await schoology.init(loop)
 
-    # We can sync buildings and create queries at the same time
-    task = loop.create_task(sync_buildings(db_session))
-    await asyncio.sleep(1) # give the task a chance to start
-    (students, teachers, admins, sysadmins, all_ids) = create_user_queries(db_session)
-    await task
-
-    # Create user accounts
-    responses = []
-    print('Creating / Updating students in Schoology...')
-    responses.append(await create_update_users(loop, students, create_student))
-    print('Creating / Updating teachers in Schoology...')
-    responses.append(await create_update_users(loop, teachers, create_teacher))
-    print('Creating / Updating admins in Schoology...')
-    responses.append(await create_update_users(loop, admins, create_admin))
-    print('Creating / Updating sysadmins in Schoology...')
-    responses.append(await create_update_users(loop, sysadmins, create_sysadmin))
-
-    # Delete users
-    await delete_users(all_ids)
+#    await sync_buildings()
+#    (students, teachers, admins, sysadmins, all_ids) = create_user_queries()
+#    await create_user_accounts(loop, students, teachers, admins, sysadmins)
+#    await delete_user_accounts(all_ids)
+#    await sync_courses()
+#    async for courses in schoology.list_courses():
+#        await asyncio.sleep(0.25)
+#        course_ids=[]
+#        for course in courses:
+#            print('{}'.format(course['title']))
+#            course_ids.append(course['id'])
+#            async for sections in schoology.list_sections(course_id=course['id']):
+#                await asyncio.sleep(0.25)
+#                section_ids=[]
+#                for section in sections:
+#                    print('[{}]  {}'.format(section['id'], section['section_title']))
+#                    section_ids.append(section['id'])
+#                if len(section_ids) > 0:
+#                    await schoology.bulk_delete_sections(section_ids)
+#        if len(course_ids) > 0:
+#            await schoology.bulk_delete_courses(course_ids)
 
 if __name__ == '__main__':
     main()

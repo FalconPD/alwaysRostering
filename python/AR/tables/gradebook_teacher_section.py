@@ -1,9 +1,27 @@
-from sqlalchemy import Column, Integer, String, Boolean, BigInteger, DateTime, orm
+from sqlalchemy import Column, Integer, String, Boolean, BigInteger, DateTime, ForeignKeyConstraint
+from sqlalchemy.orm import relationship
 from AR.tables import Base
 from AR.tables import utils
 
 class GradebookTeacherSection(Base):
     __tablename__ = 'GRADEBOOK_TEACHER_SECTIONS2'
+    __table_args__ = (
+        ForeignKeyConstraint(
+            [
+                'SCHOOL_YEAR',
+                'SCHOOL_CODE',
+                'COURSE_CODE',
+                'COURSE_SECTION'
+            ],
+            [
+                'MASTER_CLASS_SCHEDULE.SCHOOL_YEAR',
+                'MASTER_CLASS_SCHEDULE.SCHOOL_CODE',
+                'MASTER_CLASS_SCHEDULE.COURSE_CODE',
+                'MASTER_CLASS_SCHEDULE.COURSE_SECTION'
+            ]
+        ),
+    )
+
     active = Column('ACTIVE', Boolean, nullable=False)
     course_code = Column('COURSE_CODE', String(25), nullable=False, primary_key=True)
     course_id = Column('COURSE_ID', BigInteger, nullable=False)
@@ -39,6 +57,8 @@ class GradebookTeacherSection(Base):
     semester = Column('SEMESTER', String(3), nullable=False)
     seq = Column('SEQ', Integer, nullable=False)
     teacher_id = Column('TEACHER_ID', String(10), nullable=False, primary_key=True)
+
+    section = relationship('CourseSection', back_populates='gb_teacher_sections')
 
     report_code = '991022'
     csv_header = [
@@ -117,4 +137,22 @@ class GradebookTeacherSection(Base):
             semester                    = row[32],
             seq                         = row[33],
             teacher_id                  = row[34]
+        )
+
+    def __repr__(self):
+        return (
+            'GradebookTeacherSection '
+            'school_code={} '
+            'course_code={} '
+            'course_section={} '
+            'course_id={} '
+            'active={} '
+            'merged={}'
+        ).format(
+            self.school_code,
+            self.course_code,
+            self.course_section,
+            self.course_id,
+            self.active,
+            self.merged
         )

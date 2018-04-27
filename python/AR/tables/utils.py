@@ -23,7 +23,18 @@ def genesis_to_datetime(genesis_str):
     return date
 
 def genesis_to_boolean(genesis_str):
+    """Genesis booleans are printed as Y or N on the reports. This
+    function converts it to a Boolean"""
+
     if genesis_str == 'Y':
         return True
     else:
         return False
+
+def genesis_to_nullable_float(genesis_str):
+    """For the most part, converting to Float works OK, but an empty
+    string should be interpreted as None"""
+
+    if genesis_str == '':
+        return None
+    return float(genesis_str)

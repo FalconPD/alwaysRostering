@@ -5,7 +5,7 @@ from AR.tables import utils
 import re
 import logging
 
-class SchoolCurriculum(Base):
+class CurriculumCourse(Base):
     __tablename__ = 'SCHOOL_CURRICULUM'
 
     is_academic = Column('IS_ACADEMIC', Boolean, nullable=False)
@@ -123,6 +123,8 @@ class SchoolCurriculum(Base):
     study_hall_flag = Column('STUDY_HALL_FLAG', Boolean, nullable=False)
     team_code = Column('TEAM_CODE', String(8))
     tech_prep = Column('TECH_PREP', Boolean, nullable=False)
+
+    sections = relationship('CourseSection', back_populates='course') 
 
     report_code = '991067'
     csv_header = [ 
