@@ -1,5 +1,5 @@
 import logging
-from AR.tables import Base, Student, DistrictTeacher, StaffJobRole, School, CurriculumCourse
+from AR.tables import Base, Student, DistrictTeacher, StaffJobRole, School, CurriculumCourse, CourseSection
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import json
@@ -98,13 +98,13 @@ def schools():
     )
 
 def courses():
-    """Returns a query of active courses that have sections
-    DOES NOT include Homeroom courses"""
+    """Returns a query of active courses with sections that have at least one
+    student in them. DOES NOT include Homeroom courses"""
 
     return (
         db_session.query(CurriculumCourse)
         .filter(CurriculumCourse.course_code != '000')
         .filter(CurriculumCourse.course_active == True)
         .filter(CurriculumCourse.school_code.in_(school_codes))
-        .filter(CurriculumCourse.sections.any())
+        .filter(CurriculumCourse.sections.any(CourseSection.assigned_seats > 0))
     )

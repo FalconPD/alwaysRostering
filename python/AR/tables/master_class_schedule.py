@@ -75,6 +75,7 @@ class CourseSection(Base):
     course = relationship('CurriculumCourse', back_populates='sections')
     subsections = relationship('CourseSubsection', back_populates='section')
     gb_teacher_sections = relationship('GradebookTeacherSection', back_populates='section')
+    student_schedules = relationship('StudentSchedule', back_populates='section') 
 
     report_code = '991073'
     csv_header = [ 
@@ -296,6 +297,16 @@ class CourseSection(Base):
             self.school_code, 
             ', '.join(sorted(course_sections))
         )
+
+    @property
+    def active_students(self):
+        """Returns a list of active students in this section"""
+
+        students=[]
+        for student_schedule in self.student_schedules:
+            if student_schedule.course_status == 'ACTIVE':
+                students.append(student_schedule.student)
+        return students
 
     def __repr__(self):
         return (

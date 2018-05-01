@@ -159,7 +159,7 @@ class Student(Base):
     waive_birthplace_info = Column('WAIVE_BIRTHPLACE_INFO', Boolean, nullable=False)
     year_of_graduation = Column('YEAR_OF_GRADUATION', Integer, nullable=False)
 
-    student_schedule = relationship('StudentSchedule', back_populates='student')
+    student_schedules = relationship('StudentSchedule', back_populates='student')
     student_user_text = relationship('StudentUserText', back_populates='student')
 
     report_code = '991016'
@@ -471,9 +471,6 @@ class Student(Base):
             year_of_graduation              = row[149]
         )
 
-    def __repr__(self):
-        return "{} {} {}".format(self.student_id, self.first_name, self.last_name)
-
     @property
     def user_id(self):
         for user_text in self.student_user_text:
@@ -495,3 +492,15 @@ class Student(Base):
         if self.user_id:
             return str(self.user_id) + '@monroe.k12.nj.us'
         return None
+
+    def __repr__(self):
+        return (
+            'Student '
+            'student_id={} '
+            'first_name={} '
+            'last_name={} '
+        ).format(
+            self.student_id,
+            self.first_name,
+            self.last_name
+        )

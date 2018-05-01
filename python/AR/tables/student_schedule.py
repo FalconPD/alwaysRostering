@@ -1,10 +1,36 @@
-from sqlalchemy import Column, Integer, String, Boolean, BigInteger, Date, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, BigInteger, Date, DateTime, ForeignKeyConstraint
 from sqlalchemy.orm import relationship
 from AR.tables import Base
 from AR.tables import utils
 
 class StudentSchedule(Base):
     __tablename__ = 'STUDENT_SCHEDULE'
+    __table_args__ =  (
+        ForeignKeyConstraint(
+            [
+                'SCHOOL_YEAR',
+                'SCHOOL_CODE',
+                'COURSE_CODE',
+                'COURSE_SECTION',
+            ],
+            [
+                'MASTER_CLASS_SCHEDULE.SCHOOL_YEAR',
+                'MASTER_CLASS_SCHEDULE.SCHOOL_CODE',
+                'MASTER_CLASS_SCHEDULE.COURSE_CODE',
+                'MASTER_CLASS_SCHEDULE.COURSE_SECTION',
+            ]
+        ),
+        ForeignKeyConstraint(
+            [
+                'SCHOOL_YEAR',
+                'STUDENT_ID'
+            ],
+            [
+                'STUDENTS.SCHOOL_YEAR',
+                'STUDENTS.STUDENT_ID'
+            ]
+        )
+    )
 
     course_code = Column('COURSE_CODE', String(25), nullable=False, primary_key=True)
     course_section = Column('COURSE_SECTION', Integer, nullable=False, primary_key=True)
@@ -28,12 +54,13 @@ class StudentSchedule(Base):
     school_year = Column('SCHOOL_YEAR', String(7), nullable=False, primary_key=True)
     sifid = Column('SIFID', String(32))
     student_exit_date = Column('STUDENT_EXIT_DATE', Date)
-    student_id = Column('STUDENT_ID', String(15), ForeignKey('STUDENTS.STUDENT_ID'), nullable=False, primary_key=True)
+    student_id = Column('STUDENT_ID', String(15),  nullable=False, primary_key=True)
     student_start_date = Column('STUDENT_START_DATE', Date)
     use_in_student_sel_gpa = Column('USE_IN_STUDENT_SEL_GPA', Boolean, nullable=False)
     userid = Column('USERID', String(100))
 
-    student = relationship('Student', back_populates='student_schedule')
+    student = relationship('Student', back_populates='student_schedules')
+    section = relationship('CourseSection', back_populates='student_schedules', viewonly=True)
 
     report_code = '991015'
     csv_header = [
@@ -97,4 +124,15 @@ class StudentSchedule(Base):
         )
 
     def __repr__(self):
-        return "<StudentSchedule(student_id={}, course_code={}, course_section={})>".format(self.student_id, self.course_code, self.course_section) 
+        return (
+            'StudentSchedule '
+            'student_id={} '
+            'course_code={} '
+            'course_section={} '
+            'course_status={}'
+        ).format(
+            self.student_id,
+            self.course_code,
+            self.course_section,
+            self.course_status
+        )

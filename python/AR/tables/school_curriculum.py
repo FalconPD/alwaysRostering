@@ -124,7 +124,7 @@ class CurriculumCourse(Base):
     team_code = Column('TEAM_CODE', String(8))
     tech_prep = Column('TECH_PREP', Boolean, nullable=False)
 
-    sections = relationship('CourseSection', back_populates='course') 
+    sections = relationship('CourseSection', back_populates='course')
 
     report_code = '991067'
     csv_header = [ 
@@ -366,4 +366,13 @@ class CurriculumCourse(Base):
         )
 
     def __repr__(self):
-        return '{} {} {}'.format(self.school_code, self.course_code, self.course_description)
+        return (
+            'CurriculumCourse '
+            'school_code={} '
+            'course_code={} '
+            'course_description={}'
+        ).format(
+            self.school_code,
+            self.course_code,
+            self.course_description
+        )
