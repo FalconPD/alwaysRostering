@@ -1,19 +1,14 @@
-"""Functions relating to schools"""
-import logging
-from AR.schoology import utils
+from AR.schoology.lookup import Lookup 
 
-school_id = None
+class Schools(Lookup):
+    """Class for handling Schools. Doesn't actually do any lookups, just sets
+    school_id"""
 
-async def load():
-    """Loads the schools"""
+    endpoint = 'schools'
+    heading = 'school'
 
-    global school_id
+    async def load(self):
+        """Loads the school_id"""
 
-    schools = await list()
-    school_id = schools['school'][0]['id']
-
-async def list():
-    """Downloads all of the schools from Schoology"""
-
-    resp = await utils.get('schools')
-    return await resp.json()
+        schools = await self.list()
+        self.school_id = schools[0]['id']

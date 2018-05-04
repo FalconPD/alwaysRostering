@@ -325,6 +325,7 @@ class DistrictTeacher(Base):
         if self.teacher_first_name.isupper():
             logging.warning('{} has all uppercase first name'.format(self))
             return self.teacher_first_name.title()
+        return self.teacher_first_name
 
     # Staff last names may be improperly capitalized and half day
     # kindergarten teachers may have AM/PM after their last name
@@ -334,6 +335,7 @@ class DistrictTeacher(Base):
         if name_last.isupper():
             logging.warning('{} has all uppercase last name'.format(self))
             return name_last.title()
+        return name_last
 
     # The preferred staff email is data_1 (user_id) @monroe.k12.nj.us
     # The user_id is guaranteed unique. Also, it should be lowercase

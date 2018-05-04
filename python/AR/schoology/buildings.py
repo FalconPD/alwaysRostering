@@ -1,52 +1,54 @@
-"""Functions relating to creating / loading / listing buildings"""
-from AR.schoology import utils
-from AR.schoology import schools
+from AR.schoology.lookup import Lookup
 
-buildings = None
+class Buildings(Lookup):
+    """Class for handling Buildings"""
 
-async def load():
-    """This wrapper function allows us to reload the buildings after we
-    create/update them"""
-    global buildings
+    heading = 'building'
+    lookup_by = 'building_code'
 
-    buildings = await list()
+    @classmethod
+    async def create(cls, session):
+        """Custom create function needed to set the endpoint as it requires
+        a lookup of school_id"""
 
-def lookup_id(building_code):
-    """Check our internal list of buildings to look up the ID"""
-    for building in buildings['building']:
-        if building['building_code'] == building_code:
-            return building['id']
-    return None
+        self = cls()
+        self.session = session
+        self.endpoint = 'schools/' + session.Schools.school_id + '/buildings'
+        await self.load()
+        return self
 
-async def list():
-    """Downloads all of the buildings from Schoology"""
+    async def __aenter__(self):
+        """After adding buildings, it's important that you reload them for the
+        lookup table. This context manager simplifies that."""
+        
+        return self
 
-    resp = await utils.get('schools/' + schools.school_id + '/buildings')
-    return await resp.json()
+    async def __aexit__(self, *exc):
+        await self.load()
 
-async def create_update(title, building_code, address1='', address2='',
-    city='Monroe Township', state='NJ', postal_code='08831', country='USA',
-    website='', phone='', fax='', picture_url=''):
-    """Looks up a building, if it doesn't exist creates it, otherwise updates
-    its information. Has some built-in defaults for Monroe"""
+    async def add_update(self, title, building_code, address1='', address2='',
+        city='Monroe Township', state='NJ', postal_code='08831', country='USA',
+        website='', phone='', fax='', picture_url=''):
+        """Looks up a building, if it doesn't exist creates it, otherwise updates
+        its information. Has some built-in defaults for Monroe"""
 
-    json_data = {
-        'title': title,
-        'building_code': building_code,
-        'address1': address1,
-        'address2': address2,
-        'city': city,
-        'state': state,
-        'postal_code': postal_code,
-        'country': country,
-        'website': website,
-        'phone': phone,
-        'fax': fax,
-        'picture_url': picture_url
-    }
+        json_data = {
+            'title': title,
+            'building_code': building_code,
+            'address1': address1,
+            'address2': address2,
+            'city': city,
+            'state': state,
+            'postal_code': postal_code,
+            'country': country,
+            'website': website,
+            'phone': phone,
+            'fax': fax,
+            'picture_url': picture_url
+        }
 
-    building_id = lookup_id(building_code)
-    if (building_id): # update
-        await utils.put('schools/' + building_id, json=json_data)
-    else: # create
-        await utils.post('schools/' + school_id + '/buildings', json=json_data)
+        building_id = self.lookup_id(building_code)
+        if (building_id): # update
+            await self.session.put('schools/' + building_id, json=json_data)
+        else: # create
+            await self.session.post('schools/' + school_id + '/buildings', json=json_data)

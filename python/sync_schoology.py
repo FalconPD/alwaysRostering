@@ -47,27 +47,27 @@ async def create_task(tasks, loop, function):
         print('{} tasks created'.format(len(tasks)))
     return tasks
 
-async def sync_buildings(loop):
+async def add_update_buildings(loop, Schoology):
     """Makes sure our buildings are setup correctly"""
 
     # NOTE: Genesis uses the term 'schools' to refer to the individual
     # buildings, Schoology uses buildings. In Schoology there is one school,
     # 'Monroe Township Schools' and currently 8 buildings (AES, BBS, BES, etc.)
-    print('Creating / Updating buildings in Schoology...')
-    tasks=[]
-    for building in AR.schools():
-        await create_task(tasks, loop,
-            schoology.buildings.create_update(
-                title=building.school_name,
-                building_code=building.building_code,
-                address1=building.school_address1,
-                address2=building.school_address2,
-                phone=building.school_office_phone,
-                website=building.school_url
+    print('Adding / Updating buildings in Schoology...')
+    async with Schoology.Buildings as Buildings:
+        tasks=[]
+        for building in AR.schools():
+            await create_task(tasks, loop,
+                Buildings.add_update(
+                    title=building.school_name,
+                    building_code=building.building_code,
+                    address1=building.school_address1,
+                    address2=building.school_address2,
+                    phone=building.school_office_phone,
+                    website=building.school_url
+                )
             )
-        )
-    await asyncio.gather(*tasks)
-    await schoology.buildings.load()
+        await asyncio.gather(*tasks)
 
 def create_user_queries():
     """Creates Genesis queries for user group and performs sanity checks"""
@@ -119,100 +119,82 @@ async def delete_user_accounts(loop, all_ids):
             print('{} IDs checked'.format(checked))
     await schoology.users.flush()
 
-async def create_user_accounts(loop, students, teachers, admins, sysadmins):
-    """Creates / Updates user accounts for students, teachers, admins, and
+async def add_update_users(loop, students, teachers, admins, sysadmins,
+    Schoology):
+    """Adds / Updates user accounts for students, teachers, admins, and
     sysadmins"""
 
-    tasks=[]
-    print('Creating / Updating students in Schoology...')
-    for student in students:
-        tasks = await create_task(tasks, loop, 
-            schoology.users.create_update(
-                school_uid=student.student_id,
-                name_first=student.first_name,
-                name_last=student.last_name,
-                email=student.email,
-                role='Student'
-            )
-        )
-    print('Creating / Updating teachers in Schoology...')
-    for teacher in teachers:
-        tasks = await create_task(tasks, loop,
-            schoology.users.create_update(
-                school_uid=teacher.teacher_id,
-                name_first=teacher.first_name,
-                name_last=teacher.last_name,
-                email=teacher.email,
-                role='Teacher'
-            )
-        )
-    print('Creating / Updating admins in Schoology...')
-    for admin in admins:
-        tasks = await create_task(tasks, loop,
-            schoology.users.create_update(
-                school_uid=admin.teacher_id,
-                email=admin.email,
-                name_first=admin.first_name,
-                name_last=admin.last_name,
-                role='Administrator'
-            )
-        )
-    print('Creating / Updating sysadmins in Schoology...')
-    for sysadmin in sysadmins:
-        tasks = await create_task(tasks, loop,
-            schoology.users.create_update(
-                school_uid=sysadmin.teacher_id,
-                email=sysadmin.email,
-                name_first=sysadmin.first_name,
-                name_last=sysadmin.last_name,
-                role='Sysadmin'
-            )
-        )
-    await asyncio.gather(*tasks)
-    await schoology.users.flush()
-
-def create_courses():
-    """Returns Schoology course objects based on the AR.courses() query
-    in groups of 50"""
-
-    courses = []    
-    for course in AR.courses():
-        # Create the course
-        schoology_course = schoology.create_course_object(
-            building_code = course.school_code,
-            title = course.course_description,
-            course_code = course.school_code + ' ' + course.course_code
-        )
-
-        # Add in the sections
-        schoology_course['sections'] = { 'section': [] }
-        for section in course.sections:
-            schoology_course['sections']['section'].append(
-                schoology.create_section_object(
-                    title=section.name,
-                    section_school_code=section.section_school_code
+    async with Schoology.Users as Users:
+        tasks=[]
+        print('Adding / Updating students in Schoology...')
+        for student in students:
+            tasks = await create_task(tasks, loop, 
+                Users.add_update(
+                    school_uid=student.student_id,
+                    name_first=student.first_name,
+                    name_last=student.last_name,
+                    email=student.email,
+                    role='Student'
                 )
             )
+        print('Adding / Updating teachers in Schoology...')
+        for teacher in teachers:
+            tasks = await create_task(tasks, loop,
+                Users.add_update(
+                    school_uid=teacher.teacher_id,
+                    name_first=teacher.first_name,
+                    name_last=teacher.last_name,
+                    email=teacher.email,
+                    role='Teacher'
+                )
+            )
+        print('Adding / Updating admins in Schoology...')
+        for admin in admins:
+            tasks = await create_task(tasks, loop,
+                Users.add_update(
+                    school_uid=admin.teacher_id,
+                    email=admin.email,
+                    name_first=admin.first_name,
+                    name_last=admin.last_name,
+                    role='Administrator'
+                )
+            )
+        print('Adding / Updating sysadmins in Schoology...')
+        for sysadmin in sysadmins:
+            tasks = await create_task(tasks, loop,
+                Users.add_update(
+                    school_uid=sysadmin.teacher_id,
+                    email=sysadmin.email,
+                    name_first=sysadmin.first_name,
+                    name_last=sysadmin.last_name,
+                    role='Sysadmin'
+                )
+            )
+        await asyncio.gather(*tasks)
 
-        # Add it to our list
-        courses.append(schoology_course)
-        if len(courses) == 50:
-            yield courses
-            courses = []
-
-    if len(courses) > 0:
-        yield courses
-
-async def sync_courses():
+async def create_courses(loop, SchoologySession):
     """Creates / updates courses in Schoology. NOTE: This DOES NOT delete
-    courses. If someone makes a special courses for whatever reason, it
-    remains"""
+    courses. If someone manually makes a courses on schoology, it remains"""
 
-    total = 0;
-    for courses in create_courses():
-        response = await schoology.bulk_create_update_courses(courses)
-        total += len(courses)
-        print('{} courses created / updated'.format(total))
+    print('Creating / Updating {} courses...'.format(AR.courses().count()))
+
+    async with schoology.Courses(SchoologySession) as SchoologyCourses:
+        tasks = []
+        for course in AR.courses():
+            building_code = course.school_code
+            title = course.course_description
+            course_code = course.school_code + ' ' + course.course_code
+            sections = []
+            for section in course.sections:
+                sections.append({
+                    'title': section.name,
+                    'section_school_code': section.section_school_code
+                })
+            tasks = await create_task(tasks, loop,
+                SchoologyCourses.add_update(building_code, title, course_code,
+                    sections)
+            )
+        await asyncio.gather(*tasks)
 
 def create_enrollments():
     """Yields student enrollments in blocks of 50"""
@@ -244,15 +226,16 @@ async def sync(loop, db_file):
     """Performs all steps to sync Schoology with a Genesis Database"""
 
     AR.init(db_file)
-    await schoology.utils.init(loop)
-
-    #await sync_buildings(loop)
-    (students, teachers, admins, sysadmins, all_ids) = create_user_queries()
-    #await create_user_accounts(loop, students, teachers, admins, sysadmins)
-    await delete_user_accounts(loop, all_ids)
-#    await sync_courses()
+    async with schoology.Session() as Schoology:
+        await add_update_buildings(loop, Schoology)
+        (students, teachers, admins, sysadmins, all_ids) = create_user_queries()
+        await add_update_users(loop, students, teachers, admins, sysadmins,
+            Schoology)
+#    await delete_user_accounts(loop, all_ids)
+#    await create_courses(loop)
 
 #    await enroll_students()
+
 # This snippet deletes all courses (or at least tries to)
 #    async for courses in schoology.list_courses():
 #        await asyncio.sleep(0.25)
@@ -270,8 +253,6 @@ async def sync(loop, db_file):
 #                    await schoology.bulk_delete_sections(section_ids)
 #        if len(course_ids) > 0:
 #            await schoology.bulk_delete_courses(course_ids)
-
-    await schoology.utils.session.close()
 
 if __name__ == '__main__':
     main()
