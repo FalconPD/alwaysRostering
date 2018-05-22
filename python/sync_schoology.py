@@ -1,15 +1,11 @@
 import logging
 import asyncio
-import aiohttp
 import AR.AR as AR
 import AR.schoology as schoology
 import click
 import pprint
-import re
 
 pp=pprint.PrettyPrinter()
-
-chunk_size = 50
 
 @click.command()
 @click.argument('db_file', type=click.Path(exists=True), metavar='DB_FILE')
@@ -101,23 +97,23 @@ def create_user_queries():
 
     return (students, teachers, admins, sysadmins, all_ids)
 
-async def delete_user_accounts(loop, all_ids):
+async def delete_users(loop, all_ids, Schoology):
     """Takes a set of all valid genesis IDs and deletes users in Schoology
     that aren't in that set."""
 
     print('Deleting users with unknown IDs in Schoology')
-    checked = 0
-    async for page in schoology.users.list():
-        for user in page:
-            if user['school_uid'] not in all_ids:
-                print('Unknown ID {} {} {} (Schoology ID {})'.format(
-                    user['id'], user['name_first'], user['name_last'],
-                    user['school_uid']))
-                await schoology.users.delete(user['id'])
-        checked += len(page)
-        if checked % 500 == 0:
-            print('{} IDs checked'.format(checked))
-    await schoology.users.flush()
+    async with Schoology.Users as Users:
+        checked = 0
+        async for page in Users.list():
+            for user in page:
+                if user['school_uid'] not in all_ids:
+                    print('Unknown ID {} {} {} (Schoology ID {})'.format(
+                        user['id'], user['name_first'], user['name_last'],
+                        user['school_uid']))
+                    await Users.delete(user['id'])
+            checked += len(page)
+            if checked % 500 == 0:
+                print('{} IDs checked'.format(checked))
 
 async def add_update_users(loop, students, teachers, admins, sysadmins,
     Schoology):
@@ -172,13 +168,12 @@ async def add_update_users(loop, students, teachers, admins, sysadmins,
             )
         await asyncio.gather(*tasks)
 
-async def create_courses(loop, SchoologySession):
-    """Creates / updates courses in Schoology. NOTE: This DOES NOT delete
-    courses. If someone manually makes a courses on schoology, it remains"""
+async def add_update_courses(loop, Schoology):
+    """Adds / Updates courses in Schoology"""
 
-    print('Creating / Updating {} courses...'.format(AR.courses().count()))
+    print('Adding / Updating {} courses...'.format(AR.courses().count()))
 
-    async with schoology.Courses(SchoologySession) as SchoologyCourses:
+    async with Schoology.Courses as Courses:
         tasks = []
         for course in AR.courses():
             building_code = course.school_code
@@ -191,8 +186,7 @@ async def create_courses(loop, SchoologySession):
                     'section_school_code': section.section_school_code
                 })
             tasks = await create_task(tasks, loop,
-                SchoologyCourses.add_update(building_code, title, course_code,
-                    sections)
+                Courses.add_update(building_code, title, course_code, sections)
             )
         await asyncio.gather(*tasks)
 
@@ -227,32 +221,15 @@ async def sync(loop, db_file):
 
     AR.init(db_file)
     async with schoology.Session() as Schoology:
-        await add_update_buildings(loop, Schoology)
-        (students, teachers, admins, sysadmins, all_ids) = create_user_queries()
-        await add_update_users(loop, students, teachers, admins, sysadmins,
-            Schoology)
-#    await delete_user_accounts(loop, all_ids)
-#    await create_courses(loop)
+        #await add_update_buildings(loop, Schoology)
+        #(students, teachers, admins, sysadmins, all_ids) = create_user_queries()
+        #await add_update_users(loop, students, teachers, admins, sysadmins,
+        #    Schoology)
+        #await delete_users(loop, all_ids, Schoology)
+        await add_update_courses(loop, Schoology)
 
 #    await enroll_students()
 
-# This snippet deletes all courses (or at least tries to)
-#    async for courses in schoology.list_courses():
-#        await asyncio.sleep(0.25)
-#        course_ids=[]
-#        for course in courses:
-#            print('{}'.format(course['title']))
-#            course_ids.append(course['id'])
-#            async for sections in schoology.list_sections(course_id=course['id']):
-#                await asyncio.sleep(0.25)
-#                section_ids=[]
-#                for section in sections:
-#                    print('[{}]  {}'.format(section['id'], section['section_title']))
-#                    section_ids.append(section['id'])
-#                if len(section_ids) > 0:
-#                    await schoology.bulk_delete_sections(section_ids)
-#        if len(course_ids) > 0:
-#            await schoology.bulk_delete_courses(course_ids)
 
 if __name__ == '__main__':
     main()

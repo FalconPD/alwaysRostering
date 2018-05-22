@@ -493,6 +493,34 @@ class Student(Base):
             return str(self.user_id) + '@monroe.k12.nj.us'
         return None
 
+    @property
+    def race(self):
+        """
+        Uses the boolean flags in a Student object to return a race string
+        """
+        races = []
+        if self.race_white:
+            races.append("White")
+        elif self.race_black:
+            races.append("Black or African American")
+        elif self.race_american_indian:
+            races.append("American Indian or Alaska Native")
+        elif self.race_asian:
+            races.append("Asian")
+        elif self.race_pacific:
+            races.append("Native Hawaiian or Other Pacific Islander")
+        if len(races) > 0:
+            return ",".join(races)
+        else:
+            return "Not Specified or Other"
+
+    @property
+    def grade(self):
+        """
+        Returns the grade without any leading zeros
+        """
+        return self.grade_level.lstrip('0')
+
     def __repr__(self):
         return (
             'Student '

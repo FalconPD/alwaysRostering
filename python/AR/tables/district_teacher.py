@@ -317,31 +317,49 @@ class DistrictTeacher(Base):
         )
 
     def __repr__(self):
-        return '{} {} {}'.format(self.teacher_id, self.teacher_first_name, self.teacher_last_name)
+        return '{} {} {}'.format(self.teacher_id, self.teacher_first_name,
+            self.teacher_last_name)
 
-    # Staff first names may be improperly capitalized
     @property
     def first_name(self):
+        """
+        Staff first names may be improperly capitalized
+        """
         if self.teacher_first_name.isupper():
             logging.warning('{} has all uppercase first name'.format(self))
             return self.teacher_first_name.title()
         return self.teacher_first_name
 
-    # Staff last names may be improperly capitalized and half day
-    # kindergarten teachers may have AM/PM after their last name
     @property
     def last_name(self):
+        """
+        Staff last names may be improperly capitalized and half day
+        kindergarten teachers may have AM/PM after their last name
+        """
         name_last = re.sub(r' (AM|PM)$', '', self.teacher_last_name, count=1)
         if name_last.isupper():
             logging.warning('{} has all uppercase last name'.format(self))
             return name_last.title()
         return name_last
 
-    # The preferred staff email is data_1 (user_id) @monroe.k12.nj.us
-    # The user_id is guaranteed unique. Also, it should be lowercase
     @property
     def email(self):
+        """
+        The preferred staff email is data_1 (user_id) @monroe.k12.nj.us
+        The user_id is guaranteed unique. Also, it should be lowercase
+        """
         if self.data_1 == '':
             logging.warning('{} does not have a user_id (data_1)'.format(self))
             return None
         return self.data_1.lower() + '@monroe.k12.nj.us'
+    
+    @property
+    def long_email(self):
+        """
+        Some services still use email in the form
+        FirstName.LastName@monroe.k12.nj.us. This is NOT guaranteed to be
+        unique!
+        """
+        clean_first_name = self.first_name.replace(" ", "")
+        clean_last_name = self.last_name.replace(" ", "")
+        return clean_first_name + "." + clean_last_name + "@monroe.k12.nj.us"

@@ -402,4 +402,4 @@ class School(Base):
         )
 
     def __repr__(self):
-        return '{} {}'.format(self.building_code, self.school_name)
+        return 'School school_code={} school_name={}'.format(self.school_code, self.school_name)

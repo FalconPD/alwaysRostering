@@ -10,6 +10,7 @@ from AR.schoology.schools import Schools
 from AR.schoology.roles import Roles
 from AR.schoology.buildings import Buildings
 from AR.schoology.users import Users
+from AR.schoology.courses import Courses
 
 class Session():
     """A context manager to abstract loading of lookup tables and session
@@ -30,6 +31,7 @@ class Session():
 
         # These do not
         self.Users = await Users.create(self)
+        self.Courses = await Courses.create(self)
 
         return self
 
@@ -55,40 +57,49 @@ class Session():
 
         # Add the BASE_URL if needed
         url = endpoint if endpoint.startswith(constants.BASE_URL) else (constants.BASE_URL + endpoint)
+      
+        # Retry loop
+        retries = 0
+        while True:
+            # Get a semaphore and perform the request
+            async with self.sem, self.session.request(method, url, params=params, json=json,
+                headers=self.create_header()) as resp:
 
-        # Get a semaphore and perform the request
-        logging.debug('HTTP {} {} params={} json={}'.format(method, url, params,
-            json))
-        async with self.sem, self.session.request(method, url, params=params, json=json,
-            headers=self.create_header()) as resp:
+                logging.debug('HTTP {} {} params={} json={}'.format(method, url, params,
+                    json))
 
-            await asyncio.sleep(constants.HTTP_WAIT)
+                await asyncio.sleep(constants.HTTP_WAIT)
 
-            logging.debug('HTTP RESPONSE {}'.format(resp.status))
-            if 200 <= resp.status < 300: # 2xx Success
-                if resp.status == 207:   # 207 Multi-Status
-                    response_json = await resp.json()
-                    responses = []
-                    if 'user' in response_json:
-                        responses += response_json['user']
-                    if 'course' in response_json:
-                        for course in response_json['course']:
-                            sections = course.pop('sections', None)
-                            responses.append(course)
-                            if sections != None:
-                                responses += sections['section']
-                    for response in responses:
-                        if response['response_code'] != 200:
-                            logging.warning('HTTP 207: {}'.format(response))
-            elif 300 <= resp.status < 400: # 3xx Redirect
-                logging.warning('HTTP {}'.format(resp.status))
-            elif 400 <= resp.status < 500: # 4xx Error (TODO: retry 429s)
-                logging.error('HTTP {}'.format(resp.status))
-                exit(1)
-            elif 500 <= resp.status < 600: # 5xx Server Error (TODO: retry 504s)
-                logging.error('HTTP {}'.format(resp.status))
-                exit(1)
-            return resp
+                logging.debug('HTTP RESPONSE {}'.format(resp.status))
+                if 200 <= resp.status < 300: # 2xx Success
+                    if resp.status == 207:   # 207 Multi-Status
+                        response_json = await resp.json()
+                        responses = []
+                        if 'user' in response_json:
+                            responses += response_json['user']
+                        if 'course' in response_json:
+                            for course in response_json['course']:
+                                sections = course.pop('sections', None)
+                                responses.append(course)
+                                if sections != None:
+                                    responses += sections['section']
+                        for response in responses:
+                            if response['response_code'] != 200:
+                                logging.warning('HTTP 207: {}'.format(response))
+                    return resp
+                elif 300 <= resp.status < 400: # 3xx Redirect
+                    logging.warning('HTTP {}'.format(resp.status))
+                    return resp
+                elif 400 <= resp.status < 500: # 4xx Error
+                    logging.error('HTTP {}'.format(resp.status))
+                    exit(1)
+                elif 500 <= resp.status < 600: # 5xx Server Error
+                    logging.warning('HTTP {}'.format(resp.status))
+                    if retries >= 2:
+                        logging.error('Too many retries, exiting')
+                        exit(1)
+            retries += 1
+            logging.warning('Retry {}')
 
     async def get(self, endpoint, params=None):
         """Shortcut for HTTP GET"""

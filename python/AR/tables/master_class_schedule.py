@@ -238,10 +238,10 @@ class CourseSection(Base):
         if (len(self.subsections) == 0):
             logging.warning('{}: No subsections'.format(self))
             return None
-        elif (len(self.subsections) > 1):
+        #elif (len(self.subsections) > 1):
             # NOTE: It seems subsections are used to split up a course by
             # marking period in gym
-            logging.warning('{}: Multiple subsections, using first'.format(self))
+            #logging.warning('{}: Multiple subsections, using first'.format(self))
         return self.subsections[0]
 
     @property
@@ -271,6 +271,9 @@ class CourseSection(Base):
 
         if self.school_code == 'MTHS':
             return '{}{} {}'.format(self.period, self.day,
+                self.course.course_description)
+        elif self.school_code == 'AMS':
+            return 'Period {} {}'.format(self.period,
                 self.course.course_description)
         return '{} {} {}'.format(self.course_code, self.course_section,
             self.course.course_description)

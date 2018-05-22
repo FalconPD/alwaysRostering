@@ -105,5 +105,17 @@ class CourseSubsection(Base):
         )
 
     def __repr__(self):
-        return '{} {} {} {} {}'.format(self.school_code, self.course_code, self.course_section,
-            self.subsection, self.subsection_description)
+        return (
+                "CourseSubsection "
+                "school_code={} "
+                "course_code={} "
+                "course_section={} "
+                "subsection={} "
+                "subsection_description={}"
+            ).format(
+                self.school_code,
+                self.course_code,
+                self.course_section,
+                self.subsection,
+                self.subsection_description
+            )

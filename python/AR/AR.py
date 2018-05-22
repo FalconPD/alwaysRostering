@@ -33,8 +33,7 @@ def init(db_file):
     return db_session
 
 def students():
-    """Returns a query of active, in-district students. Defaults to all
-    students, but you can specify grade levels and schools"""
+    """Returns a query of active, in-district students."""
 
     return (
         db_session.query(Student)
