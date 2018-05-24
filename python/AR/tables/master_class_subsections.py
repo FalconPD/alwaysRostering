@@ -6,9 +6,30 @@ from AR.tables import utils
 class CourseSubsection(Base):
     __tablename__ = 'MASTER_CLASS_SUBSECTIONS'
     __table_args__ = (
-        ForeignKeyConstraint(['SCHOOL_YEAR', 'SCHOOL_CODE','COURSE_CODE', 'COURSE_SECTION'],
-            ['MASTER_CLASS_SCHEDULE.SCHOOL_YEAR', 'MASTER_CLASS_SCHEDULE.SCHOOL_CODE',
-            'MASTER_CLASS_SCHEDULE.COURSE_CODE', 'MASTER_CLASS_SCHEDULE.COURSE_SECTION']),
+        ForeignKeyConstraint(
+            [
+                'SCHOOL_YEAR',
+                'SCHOOL_CODE',
+                'COURSE_CODE',
+                'COURSE_SECTION'
+            ],
+            [
+                'MASTER_CLASS_SCHEDULE.SCHOOL_YEAR',
+                'MASTER_CLASS_SCHEDULE.SCHOOL_CODE',
+                'MASTER_CLASS_SCHEDULE.COURSE_CODE',
+                'MASTER_CLASS_SCHEDULE.COURSE_SECTION'
+            ],
+        ),
+        ForeignKeyConstraint(
+            [
+                'TEACHER_ID',
+                'SCHOOL_YEAR',
+            ],
+            [
+                'DISTRICT_TEACHERS.TEACHER_ID',
+                'DISTRICT_TEACHERS.SCHOOL_YEAR',
+            ],
+        ),
     )
 
     alternate_bell_code = Column('ALTERNATE_BELL_CODE', String(7))
@@ -40,6 +61,8 @@ class CourseSubsection(Base):
     thru_period = Column('THRU_PERIOD', Integer, nullable=False)
 
     section = relationship('CourseSection', back_populates='subsections')
+    teacher = relationship('DistrictTeacher', back_populates='subsections',
+        viewonly=True)
 
     report_code = '991074'
     csv_header = [ 

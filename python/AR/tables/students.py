@@ -1,12 +1,26 @@
-from sqlalchemy import Column, Integer, String, Boolean, BigInteger, Date, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, BigInteger, Date
+from sqlalchemy import DateTime, ForeignKeyConstraint
 from sqlalchemy.orm import relationship
-from AR.tables import utils, Base, StudentUserText
 import logging
+import re
 from sqlalchemy.orm import column_property
 from sqlalchemy import select, func
+from AR.tables import utils, Base, StudentUserText
 
 class Student(Base):
     __tablename__ = 'STUDENTS'
+    __table_args__ = (
+        ForeignKeyConstraint(
+            [
+                'CURRENT_SCHOOL',
+                'SCHOOL_YEAR',
+            ],
+            [
+                'SCHOOLS.SCHOOL_CODE',
+                'SCHOOLS.SCHOOL_YEAR',
+            ],
+        ),
+    )
 
     ability_level = Column('ABILITY_LEVEL', String(8))
     academically_disadvantaged = Column('ACADEMICALLY_DISADVANTAGED', Boolean, nullable=False)
@@ -159,8 +173,15 @@ class Student(Base):
     waive_birthplace_info = Column('WAIVE_BIRTHPLACE_INFO', Boolean, nullable=False)
     year_of_graduation = Column('YEAR_OF_GRADUATION', Integer, nullable=False)
 
-    student_schedules = relationship('StudentSchedule', back_populates='student')
-    student_user_text = relationship('StudentUserText', back_populates='student')
+    student_schedules = relationship('StudentSchedule',
+        back_populates='student')
+    student_user_text = relationship('StudentUserText',
+        back_populates='student')
+    elementary_homeroom = relationship('StudentElementaryHomeroom',
+        back_populates='student')
+    homeroom_school_teacher = relationship('SchoolTeacher', uselist=False,
+        back_populates='homeroom_students')
+    school = relationship('School', uselist=False, back_populates='students')
 
     report_code = '991016'
     csv_header = [
@@ -521,6 +542,26 @@ class Student(Base):
         """
         return self.grade_level.lstrip('0')
 
+    @property
+    def homeroom_teachers(self):
+        """
+        Utility function to return a query of all homeroom teachers
+        """
+        return self.homeroom_school_teacher.district_teacher.shared_teachers
+
+    @property
+    def homeroom_suffix(self):
+        """
+        Some homerooms have AM/PM after them to indicate a half-day. This
+        returns either the AM/PM suffix or an empty string
+        """
+        suffix = re.search(r'(AM|PM)$', self.homeroom)
+        if suffix:
+            return suffix.group(1)
+        else:
+            return ""
+
+
     def __repr__(self):
         return (
             'Student '
@@ -532,3 +573,4 @@ class Student(Base):
             self.first_name,
             self.last_name
         )
+

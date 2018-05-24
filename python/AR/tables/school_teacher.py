@@ -1,11 +1,39 @@
-from sqlalchemy import Column, Integer, String, Boolean, BigInteger, Date, DateTime, orm
+from sqlalchemy import Column, Integer, String, Boolean, BigInteger, DateTime
+from sqlalchemy import ForeignKeyConstraint
+from sqlalchemy.orm import relationship
 from AR.tables import Base
 from AR.tables import utils
 
 class SchoolTeacher(Base):
-    __tablename__ = 'SCHOOL_TEACHERS',
+    __tablename__ = 'SCHOOL_TEACHERS'
+    __table_args__ = (
+        ForeignKeyConstraint(
+            [
+                'CURRENT_HOMEROOM',
+                'SCHOOL_CODE',
+                'SCHOOL_YEAR',
+            ],
+            [
+                'STUDENTS.HOMEROOM',
+                'STUDENTS.CURRENT_SCHOOL',
+                'STUDENTS.SCHOOL_YEAR',
+            ],
+        ),
+        ForeignKeyConstraint(
+            [
+                'SCHOOL_YEAR',
+                'TEACHER_ID',
+            ],
+            [
+                'DISTRICT_TEACHERS.SCHOOL_YEAR',
+                'DISTRICT_TEACHERS.TEACHER_ID',
+            ],
+        ),
+    )
+
     attendance_homeroom = Column('ATTENDANCE_HOMEROOM', String(25))
-    basic_skills_teacher = Column('BASIC_SKILLS_TEACHER', Boolean, nullable=False)
+    basic_skills_teacher = Column('BASIC_SKILLS_TEACHER', Boolean,
+        nullable=False)
     created_by_portal_oid = Column('CREATED_BY_PORTAL_OID', BigInteger)
     created_by_task_oid = Column('CREATED_BY_TASK_OID', BigInteger)
     created_by_user_oid = Column('CREATED_BY_USER_OID', BigInteger)
@@ -39,6 +67,11 @@ class SchoolTeacher(Base):
     special_subject_teacher = Column('SPECIAL_SUBJECT_TEACHER', Boolean, nullable=False)
     teacher_id = Column('TEACHER_ID', String(10), nullable=False, primary_key=True)
     team_code = Column('TEAM_CODE', String(8))
+
+    homeroom_students = relationship('Student',
+        back_populates='homeroom_school_teacher', viewonly=True)
+    district_teacher = relationship('DistrictTeacher',
+        back_populates='school_teacher', viewonly=True)
 
     report_code = '991021'
     csv_header = [ 
@@ -118,3 +151,7 @@ class SchoolTeacher(Base):
             teacher_id                  = row[33],
             team_code                   = row[34]
         )
+
+    def __repr__(self):
+        return "SchoolTeacher teacher_id={} school_code={}".format(
+            self.teacher_id, self.school_code)

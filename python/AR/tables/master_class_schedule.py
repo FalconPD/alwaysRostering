@@ -235,7 +235,7 @@ class CourseSection(Base):
 
     @property
     def first_subsection(self):
-        if (len(self.subsections) == 0):
+        if len(self.subsections) == 0:
             logging.warning('{}: No subsections'.format(self))
             return None
         #elif (len(self.subsections) > 1):

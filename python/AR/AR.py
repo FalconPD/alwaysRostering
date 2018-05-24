@@ -1,5 +1,6 @@
 import logging
-from AR.tables import Base, Student, DistrictTeacher, StaffJobRole, School, CurriculumCourse, CourseSection
+from AR.tables import Base, Student, DistrictTeacher, StaffJobRole, School
+from AR.tables import CurriculumCourse, CourseSection
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import json

@@ -365,6 +365,17 @@ class CurriculumCourse(Base):
             tech_prep                       = utils.genesis_to_boolean(row[114])
         )
 
+    @property
+    def active_sections(self):
+        """
+        Returns a list of sections for this course that have students in them
+        """
+        active_sections = []
+        for section in self.sections:
+            if section.assigned_seats > 0:
+                active_sections.append(section)
+        return active_sections
+
     def __repr__(self):
         return (
             'CurriculumCourse '

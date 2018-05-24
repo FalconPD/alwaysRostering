@@ -1,9 +1,12 @@
-from sqlalchemy import Column, Integer, String, Boolean, BigInteger, Float, DateTime, Date, orm
+from sqlalchemy import Column, Integer, String, Boolean, BigInteger, Float
+from sqlalchemy import DateTime, Date
+from sqlalchemy.orm import relationship
 from AR.tables import Base
 from AR.tables import utils
 
 class School(Base):
     __tablename__ = 'SCHOOLS'
+
     daily_to_post_class = Column('DAILY_TO_POST_CLASS', Boolean, nullable=False)
     hr_to_post_daily = Column('HR_TO_POST_DAILY', Boolean, nullable=False)
     allow_hr_prop_emails = Column('ALLOW_HR_PROP_EMAILS', Boolean, nullable=False)
@@ -133,6 +136,8 @@ class School(Base):
     att_checkin_use_minipass = Column('ATT_CHECKIN_USE_MINIPASS', Boolean, nullable=False)
     use_subsection_descriptions = Column('USE_SUBSECTION_DESCRIPTIONS', Boolean, nullable=False)
     is_vocational = Column('IS_VOCATIONAL', Boolean, nullable=False)
+
+    students = relationship('Student', back_populates='school')
 
     report_code = '991024'
     csv_header = [

@@ -1,5 +1,6 @@
 from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
+from AR.tables.student_elem_homeroom import StudentElementaryHomeroom
 from AR.tables.student_schedule import StudentSchedule
 from AR.tables.student_user_text import StudentUserText
 from AR.tables.students import Student
@@ -13,12 +14,14 @@ from AR.tables.master_class_schedule import CourseSection
 from AR.tables.master_class_subsections import CourseSubsection
 
 sa_classes = [
+    StudentElementaryHomeroom,
     StudentSchedule,
     Student,
     StudentUserText,
     DistrictTeacher,
     GradebookTeacherSection,
     School,
+    SchoolTeacher,
     StaffJobRole,
     CurriculumCourse,
     CourseSection,

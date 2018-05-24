@@ -1,4 +1,4 @@
-FIELDNAMES = (
+STANDARDROSTER_FIELDNAMES = (
     'School State Code',
     'School Name',
     'Previous Instructor ID',
@@ -24,17 +24,59 @@ FIELDNAMES = (
     'Student Email',
 )
 
-COURSE_CODES = {
+ADDITIONALUSERS_FIELDNAMES = (
+    'School State Code',
+    'School Name',
+    'Instructor ID',
+    'Instructor State ID',
+    'Last Name',
+    'First Name',
+    'Middle Name',
+    'User Name',
+    'Email Address',
+    'Role = School Proctor?',
+    'Role = School Assessment Coordinator?',
+    'Role = Administrator?',
+    'Role = District Proctor?',
+    'Role = Data Administrator?',
+    'Role = District Assessment Coordinator?',
+    'Role = Interventionist?',
+    'Role = SN Administrator?',
+)
+
+SCHOOL_COURSE_CODES = {
+    'AES': (
+        '140', # Mathematics
+        '150', # Mathematics
+        '159', # Accelerated Math
+        '201', # Wilson Reading
+        '240', # English Language Arts 
+        '250', # English Language Arts
+    ),
     'AMS': (
-        "105", # Accelerated Math
-        "110", # Algebra I
-        "111", # Accelerated Algebra I
-        "120", # Geometry
-        "160", # Mathematics - Sixth Grade
-        "170", # Mathematics - Seventh Grade
-        "180", # Mathematics - Eight Grade
-        "260", # Language Arts - Sixth Grade
-        "270", # Language Arts - Seventh Grade
-        "280", # Langauge Arts - Eight Grade 
-    )
+        '105', # Accelerated Math
+        '110', # Algebra I
+        '111', # Accelerated Algebra I
+        '120', # Geometry
+        '160', # Mathematics - Sixth Grade
+        '170', # Mathematics - Seventh Grade
+        '180', # Mathematics - Eight Grade
+        '260', # Language Arts - Sixth Grade
+        '270', # Language Arts - Seventh Grade
+        '280', # Langauge Arts - Eight Grade 
+    ),
+    'BES': (
+        '140', # Mathematics
+        '150', # Mathematics
+        '159', # Accelerated Math
+        '240', # English Language Arts
+        '250', # English Language Arts
+    ),
+    'WES': (
+        '140', # Mathematics
+        '150', # Mathematics
+        '159', # Accelerated Mathematics
+        '240', # English Language Arts
+        '250', # English Language Arts
+    ),
 }

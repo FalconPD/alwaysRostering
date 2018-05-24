@@ -2,13 +2,33 @@ import csv
 import logging
 import click
 import constants
+from sqlalchemy import or_, and_
 
 import sys
-sys.path.append("..")
+sys.path.append("..") # if youv'e got a better way, I'm all ears
 import AR.AR as AR
-from AR.tables import CurriculumCourse, DistrictTeacher, School
+from AR.tables import CurriculumCourse, DistrictTeacher, School, Student
+from AR.tables import SchoolTeacher, CourseSection
+
+standard_roster = None
+additional_users = None
+teachers = set()
+
+def add_school_to_row(row, school):
+    """
+    Adds information from a School to the CSV row
+    """
+    row['School State Code'] = school.state_school_code
+    row['School Name']       = school.school_name
+    return row
 
 def add_teacher_to_row(row, district_teacher):
+    """
+    Adds information from a DistrictTeacher to the CSV row
+    """
+    global teachers
+
+    teachers.add(district_teacher)
     row['Previous Instructor ID']    = ""
     row['Instructor ID']             = district_teacher.teacher_id
     row['Instructor State ID']       = district_teacher.state_id_number
@@ -20,6 +40,9 @@ def add_teacher_to_row(row, district_teacher):
     return row
 
 def add_student_to_row(row, student):
+    """
+    Adds information from a Student to the CSV row
+    """
     row['Previous Student ID'] = ""
     row['Student ID'] = student.student_id
     row['Student State ID'] = student.state_id_number
@@ -34,38 +57,55 @@ def add_student_to_row(row, student):
     row['Student Email'] = student.email
     return row
 
-@click.command()
-@click.option('--debug', help="turn on debugging", is_flag=True)
-@click.argument('db_file', type=click.Path(exists=True))
-@click.argument('output', type=click.Path(writable=True))
-def main(debug, db_file, output):
+def roster_k3():
     """
-    Creates MAP rosters.
-    Loads a Genesis database from DB_FILE and saves the roster to OUTPUT
+    roster grades K-3 and programs by HR teacher
     """
-    if debug:
-        logging.basicConfig(logging.DEBUG)
-    else:
-        logging.basicConfig()
+    
+    grade_levels = ['KH', 'KF', '01', '02', '03']
 
-    AR.init(db_file)
+    # certain programs in certain buildings also need to be rostered by HR
+    school_codes = ['BES', 'BBS', 'OTS', 'MLS']
+    program_types = ['23', '30'] # Multiple Disabilities, Autism
 
-    with open(output, 'w', newline='') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=constants.FIELDNAMES)
-        writer.writeheader()
+    students = (AR.students()
+        .filter(
+            or_(
+                Student.grade_level.in_(grade_levels),
+                and_(
+                    Student.current_program_type_code.in_(program_types),
+                    Student.current_school.in_(school_codes),
+                ),
+            )
+        )
+    )
+    print("Rostering {} grade K-3 students by HR teacher...".format(
+        students.count()))
+    for student in students:
+        for teacher in student.homeroom_teachers:
+            row = add_school_to_row({}, student.school)
+            row['Class Name'] = 'Homeroom ' + student.homeroom_suffix
+            row = add_teacher_to_row(row, teacher)
+            row = add_student_to_row(row, student)
+            standard_roster.writerow(row)
 
-        row={}
-        school = AR.schools().filter(School.school_code=='AMS').one()
-        row['School State Code'] = school.state_school_code
-        row['School Name']       = school.school_name
-        course_codes = constants.COURSE_CODES[school.school_code]
+def roster_412():
+    """
+    roster grades 4-12 by course
+    """
+    print("Rostering grade 4-12 students by course...")
+    for school_code, course_codes in constants.SCHOOL_COURSE_CODES.items():
+        school = AR.schools().filter(School.school_code==school_code).one()
+        print("{}".format(school.school_name))
+        row=add_school_to_row({}, school)
         courses = (AR.courses()
             .filter(CurriculumCourse.school_code==school.school_code)
             .filter(CurriculumCourse.course_code.in_(course_codes))
         )
-        print(course_codes)
         for course in courses:
-            for section in course.sections:
+            print("* {} {}".format(course.course_code,
+                course.course_description))
+            for section in course.active_sections:
                 row['Class Name'] = section.name
                 teacher_id = section.first_subsection.teacher_id
                 district_teacher = (AR.teachers()
@@ -75,82 +115,151 @@ def main(debug, db_file, output):
                 row = add_teacher_to_row(row, district_teacher)
                 for student in section.active_students:
                     row = add_student_to_row(row, student)
-                    writer.writerow(row)
+                    standard_roster.writerow(row)
                 # Also add students from any merged sections
                 if section.merged:
                     for section in section.merged_sections:
                         for student in section.active_students:
                             row = add_student_to_row(row, student)
-                            writer.writerow(row)
+                            standard_roster.writerow(row)
+
+def roster_pilot():
+    """
+    roster the HS MAP pilot
+    """
+    print("Rostering HS pilot students by course...")
+    school_code = 'MTHS'
+    school = AR.schools().filter(School.school_code==school_code).one()
+    row=add_school_to_row({}, school)
+    course_sections = (
+        ('0710', '6'),  # Algebra II
+        ('0710', '7'),  # Algebra II
+        ('0710', '8'),  # Algebra II
+        ('0724', '4'),  # Dynamics of Algebra II
+        ('0724', '5'),  # Dynamics of Algebra II
+        ('0709', '2'),  # Geometry
+        ('0723', '1'),  # Dynamics of Geometry
+        ('0601', '8'),  # Language Arts I
+        ('0601', '9'),  # Language Arts I
+        ('0601', '10'), # Language Arts I
+        ('0602', '4'),  # Honors Language Arts I
+    )
+    for course_code, course_section in course_sections:
+        section = (AR.db_session.query(CourseSection)
+            .filter(CourseSection.course_code==course_code)
+            .filter(CourseSection.course_section==course_section)
+            .filter(CourseSection.school_code==school_code)
+            .one()
+        )
+        row['Class Name'] = section.name
+        district_teacher = section.first_subsection.teacher
+        print("* {} {}".format(section.name, district_teacher.last_name))
+        row = add_teacher_to_row(row, district_teacher)
+        for student in section.active_students:
+            row = add_student_to_row(row, student)
+            standard_roster.writerow(row)
+            # Also add students from any merged sections
+            if section.merged:
+                for section in section.merged_sections:
+                    for student in section.active_students:
+                        row = add_student_to_row(row, student)
+                        standard_roster.writerow(row)
+
+def users():
+    """
+    Creates the AdditionalUsers file based on all the teachers that have
+    been referenced.
+    """
+    for teacher in teachers:
+        row = {}
+        row['School State Code']                       = ''
+        row['School Name']                             = ''
+        row['Instructor ID']                           = teacher.teacher_id
+        row['Instructor State ID']                     = teacher.state_id_number
+        row['Last Name']                               = teacher.last_name
+        row['First Name']                              = teacher.first_name
+        row['Middle Name']                         = teacher.teacher_middle_name
+        row['User Name']                               = teacher.long_email
+        row['Email Address']                           = teacher.long_email
+        row['Role = School Proctor?']                  = 'Y'
+        row['Role = School Assessment Coordinator?']   = ''
+        row['Role = Administrator?']                   = ''
+        row['Role = District Proctor?']                = ''
+        row['Role = Data Administrator?']              = ''
+        row['Role = District Assessment Coordinator?'] = ''
+        row['Role = Interventionist?']                 = ''
+        row['Role = SN Administrator?']                = ''
+        additional_users.writerow(row)
+
+@click.group(chain=True)
+@click.option('--debug', help="turn on debugging", is_flag=True)
+@click.argument('db_file', type=click.Path(exists=True))
+@click.argument('prefix')
+def cli(debug, db_file, prefix):
+    """
+    Loads a Genesis database from DB_FILE and performs COMMAND(s). Writes
+    output files with the PREFIX specified.
+
+    """
+    global standard_roster
+    global additional_users
+
+    if debug:
+        logging.basicConfig(logging.DEBUG)
+    else:
+        logging.basicConfig()
+
+    AR.init(db_file)
+
+    output = prefix + '_StandardRoster.csv'
+    csvfile = open(output, 'w', newline='')
+    standard_roster = csv.DictWriter(csvfile,
+        fieldnames=constants.STANDARDROSTER_FIELDNAMES)
+    standard_roster.writeheader()
+
+    output = prefix + '_AdditionalUsers.csv'
+    csvfile = open(output, 'w', newline='')
+    additional_users = csv.DictWriter(csvfile,
+        fieldnames=constants.ADDITIONALUSERS_FIELDNAMES)
+    additional_users.writeheader()
+
+@cli.command(name="K-3")
+def cli_roster_k3():
+    """
+    roster grades K-3 and programs by HR teacher
+    """
+    roster_k3()
+
+@cli.command(name="4-12")
+def cli_roster_412():
+    """
+    roster grades 4-12 by course
+    """
+    roster_412()
+
+@cli.command(name="pilot")
+def cli_roster_pilot():
+    """
+    roster the HS MAP pilot
+    """
+    roster_pilot()
+
+@cli.command(name="additional_users")
+def cli_additional_users():
+    """
+    create AdditionalUsers file
+    """
+    users()
+
+@cli.command()
+def all():
+    """
+    perform all rostering commands
+    """
+    roster_k3()
+    roster_412()
+    roster_pilot()
+    users()
 
 if __name__ == '__main__':
-    main()
-
-# The following is test code that was found in AR.py
-
-# All the students we test and their classes
-#all_students = (
-#    db_session.query(Student, StudentSchedule)
-#    .outerjoin(StudentSchedule)
-#    .filter(Student.enrollment_status == 'ACTIVE')
-#    .filter(Student.homebound_status == 'NO')
-#    .filter(Student.grade_level.in_(['KH', 'KF', '01', '02', '03', '04', '05', '06', '07', '08']))
-#    .filter(Student.current_school.in_(['AES', 'AMS', 'BBS', 'BES', 'MLS', 'OTS', 'WES']))
-#)
-#all_ids = {student.student_id for student, cls in all_students}
-#print('Students to roster: {}'.format(len(all_ids)))
-#
-## Grades K-3 and certain programs are rostered by their HR teacher
-#hr_students = (
-#    all_students
-#    .distinct(Student.student_id) # there may be multiples if a student has two classes
-#    .filter(or_(
-#        Student.grade_level.in_(['KH', 'KF', '01', '02', '03']),
-#        Student.current_program_type_code.in_(['30', '23'])
-#    ))
-#)
-#for student, cls in hr_students:
-#    row = []
-#    row[0] = #School State Code
-#    row[1] = #School Name
-#    row[2] = #Previous Instructor ID
-#    row[3] = #Instructor ID
-#    row[4] = #Instructor State ID
-#    row[5] = #Instructor Last Name
-#    row[6] = #Instructor First Name
-#    row[7] = #Instructor Middle Initial
-#    row[8] = #User Name
-#    row[9] = #Email Address
-#    row[10] = #Class Name
-#    row[11] = #Previous Student ID
-#    row[12] = #Student ID
-#    row[13] = #Student State ID
-#    row[14] = #Student Last Name
-#    row[14] = #Student First Name
-#    row[15] = #Student Middle Initial
-#    row[16] = #Student Date Of Birth
-#    row[17] = #Student Gender
-#    row[18] = #Student Grade
-#    row[19] = #Student Ethnic Group Name
-#    row[20] = #Student User Name
-#    row[21] = #Student Email
-#hr_ids = {student.student_id for student, cls in hr_students}
-#print('Rostered by HR teacher: {}'.format(len(hr_ids)))
-
-# Everybody else is rostered by their classes
-#cls_students = (
-#    all_students
-#    .except_(hr_students)
-#    .filter(or_(
-#        and_(StudentSchedule.school_code == 'AMS', StudentSchedule.course_code.in_(["105", "110", "111", "120", "160", "170", "180", "260", "270", "280"])),
-#        and_(StudentSchedule.school_code == 'AES', StudentSchedule.course_code.in_(["140", "150", "159", "201", "240", "250"])),
-#        and_(StudentSchedule.school_code == 'BES', StudentSchedule.course_code.in_(["140", "150", "159", "240", "250"])),
-#        and_(StudentSchedule.school_code == 'WES', StudentSchedule.course_code.in_(["140", "150", "159", "240", "250"]))
-#    ))
-#)
-#cls_ids = {student.student_id for student, cls in cls_students}
-#print('Uniqued students rostered by class: {}'.format(len(cls_ids)))
-
-# There should be no overlap between our two lists
-#print('Overlap: {}'.format(hr_ids & cls_ids))
-#print('Not rostered: {}'.format(all_ids - hr_ids - cls_ids))
+    cli()

@@ -1,12 +1,13 @@
-from sqlalchemy import Column, Integer, String, Boolean, BigInteger, Date, DateTime, ForeignKeyConstraint
-from sqlalchemy.orm import relationship
-from AR.tables import Base
-from AR.tables import utils
 import re
 import logging
+from sqlalchemy import Column, Integer, String, Boolean, BigInteger, Date
+from sqlalchemy import DateTime, ForeignKeyConstraint
+from sqlalchemy.orm import relationship, object_session
+from AR.tables import Base, utils 
 
 class DistrictTeacher(Base):
     __tablename__ = 'DISTRICT_TEACHERS'
+
     teacher_address1 = Column('TEACHER_ADDRESS1', String(50))
     teacher_address2 = Column('TEACHER_ADDRESS2', String(50))
     is_admin = Column('IS_ADMIN', Boolean, nullable=False)
@@ -108,6 +109,10 @@ class DistrictTeacher(Base):
     teacher_zipcode = Column('TEACHER_ZIPCODE', String(15))
 
     job_roles = relationship('StaffJobRole', back_populates='district_teacher')
+    school_teacher = relationship('SchoolTeacher', viewonly=True,
+        back_populates='district_teacher')
+    subsections = relationship('CourseSubsection', back_populates='teacher',
+        viewonly=True)
 
     report_code = '991018',
     csv_header = [ 
@@ -317,8 +322,16 @@ class DistrictTeacher(Base):
         )
 
     def __repr__(self):
-        return '{} {} {}'.format(self.teacher_id, self.teacher_first_name,
-            self.teacher_last_name)
+        return (
+                "DistrictTeacher "
+                "teacher_id={} "
+                "teacher_first_name={} "
+                "teacher_last_name={}"
+            ).format(
+                self.teacher_id,
+                self.teacher_first_name,
+                self.teacher_last_name
+            )
 
     @property
     def first_name(self):
@@ -336,7 +349,7 @@ class DistrictTeacher(Base):
         Staff last names may be improperly capitalized and half day
         kindergarten teachers may have AM/PM after their last name
         """
-        name_last = re.sub(r' (AM|PM)$', '', self.teacher_last_name, count=1)
+        name_last = re.sub(r' +(AM|PM)$', '', self.teacher_last_name, count=1)
         if name_last.isupper():
             logging.warning('{} has all uppercase last name'.format(self))
             return name_last.title()
@@ -360,6 +373,51 @@ class DistrictTeacher(Base):
         FirstName.LastName@monroe.k12.nj.us. This is NOT guaranteed to be
         unique!
         """
-        clean_first_name = self.first_name.replace(" ", "")
-        clean_last_name = self.last_name.replace(" ", "")
-        return clean_first_name + "." + clean_last_name + "@monroe.k12.nj.us"
+        first = utils.clean_for_email(self.first_name)
+        last = utils.clean_for_email(self.last_name)
+        return first + "." + last + "@monroe.k12.nj.us"
+
+    @property
+    def real_teacher(self):
+        """
+        Trys to find a real that corresponds to this instance. Some accounts
+        are half-day kindergarten accounts that don't have actual teacher info
+        in them. Returns its own ID if this instance is real
+        """
+        if not self.include_in_njsmart: # and self.state_id_number == "":
+            # Find the teacher with the same first/last name but a different
+            # ID. Use the name property to strip the AM/PM off the end of
+            # half-day teachers and a like statement to find a match
+            teacher = (object_session(self).query(DistrictTeacher)
+                .filter(
+                    DistrictTeacher.teacher_first_name.ilike(
+                        self.first_name + '%'),
+                    DistrictTeacher.teacher_last_name.ilike(
+                        self.last_name + '%'),
+                    DistrictTeacher.teacher_id!=self.teacher_id,
+                )
+                .one()
+            )
+            return teacher
+        return self
+
+    @property
+    def shared_teachers(self):
+        """
+        If this is a shared teacher, this function returns a list of real,
+        shared teacher ids, otherwise it returns a list with it's own real id.
+        """
+        teachers = []
+        if self.shared_teacher:
+            for teacher_id in (self.shared_teacher_id_1,
+                self.shared_teacher_id_2, self.shared_teacher_id_3,
+                self.shared_teacher_id_4, self.shared_teacher_id_5,
+                self.shared_teacher_id_6):
+                if teacher_id != "":
+                    teacher = (object_session(self).query(DistrictTeacher) 
+                        .filter(DistrictTeacher.teacher_id==teacher_id)
+                        .one()
+                    )
+                    teachers.append(teacher.real_teacher)
+            return teachers
+        return [self.real_teacher]

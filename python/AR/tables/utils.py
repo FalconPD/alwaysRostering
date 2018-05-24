@@ -38,3 +38,8 @@ def genesis_to_nullable_float(genesis_str):
     if genesis_str == '':
         return None
     return float(genesis_str)
+
+def clean_for_email(str):
+    for character in (" ", "'"):
+        str = str.replace(character, "")
+    return str
