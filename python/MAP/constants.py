@@ -80,3 +80,9 @@ SCHOOL_COURSE_CODES = {
         '250', # English Language Arts
     ),
 }
+
+SCREENING_PROCTORS = {
+    'BBS': ('5030', '629', '5074'),
+    'MLS': ('443', '476', '404'),
+    'OTS': ('5457', '667', '5076'),
+}

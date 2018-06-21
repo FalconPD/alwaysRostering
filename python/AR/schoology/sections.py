@@ -6,7 +6,7 @@ def create_section_object(title, section_school_code):
     return {
         'title': title,
         'section_school_code': section_school_code,
-        'grading_periods': [1492074755], #TODO: Setup and pull grading periods from SchoolAttendanceCycle in Genesis
+        'grading_periods': [1626830909], #TODO: Setup and pull grading periods from SchoolAttendanceCycle in Genesis
         'synced': 1
     }
 

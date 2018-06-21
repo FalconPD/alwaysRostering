@@ -89,6 +89,61 @@ def roster_k3():
             row = add_student_to_row(row, student)
             standard_roster.writerow(row)
 
+def roster_screening():
+    """
+    roster pre-registered students for screening
+    """
+    print("Rostering students for kindergarten screening...")
+    students = (AR.db_session.query(Student)
+        .filter(Student.current_school=='PREG')
+        .filter(
+            or_(
+                Student.grade_level=='KH',
+                Student.grade_level=='KF',
+            )
+        )
+    )
+    for student in students:
+        # If a preregistrant has resident_district_tracking, use it to figure
+        # out what school they are going in to. If not, use home_school in
+        # Student. Otherwise, skip.
+        if student.resident_district_tracking:
+            code = student.resident_district_tracking.resident_school_code
+            if code == '010':
+                school_code = 'BBS'
+            elif code == '040':
+                school_code = 'MLS'
+            elif code == '060':
+                school_code = 'OTS'
+            else:
+                logging.warning("Can't map {} to school_code for {}".format(
+                    code, student))
+        else:
+            logging.warning(
+                "No entry in Resident District Tracking for {}".format(student))
+            if student.home_school:
+                school_code = student.home_school
+            else:
+                logging.warning(
+                    "home_school not set for {}, skipping".format(student))
+                continue
+        proctors = constants.SCREENING_PROCTORS[school_code]
+        school = AR.schools().filter(School.school_code==school_code).one()
+        row = {
+            'Class Name': 'Kindergarten Screening ' + school.school_name
+        }
+        row = add_school_to_row(row, school)
+        row = add_student_to_row(row, student)
+        row['Student Grade'] = 'PK'
+        for teacher_id in proctors:
+            teacher = (AR.staff()
+                .filter(DistrictTeacher.teacher_id==teacher_id)
+                .one()
+            )
+            row = add_teacher_to_row(row, teacher)
+            standard_roster.writerow(row)
+
+
 def roster_412():
     """
     roster grades 4-12 by course
@@ -143,6 +198,16 @@ def roster_pilot():
         ('0601', '9'),  # Language Arts I
         ('0601', '10'), # Language Arts I
         ('0602', '4'),  # Honors Language Arts I
+        ('0606', '9'),  # Language Arts III
+        ('0606', '12'), # Language Arts III
+        ('0606', '13'), # Language Arts III
+        ('0606', '14'), # Language Arts III
+        ('0606', '15'), # Language Arts III
+        ('0603', '4'),  # Language Arts II
+        ('0603', '5'),  # Language Arts II
+        ('0603', '6'),  # Language Arts II
+        ('0628', '1'),  # LA IV Contemp Iss/Monster Lit
+        ('0628', '2'),  # LA IV Contemp Iss/Monster Lit
     )
     for course_code, course_section in course_sections:
         section = (AR.db_session.query(CourseSection)
@@ -244,6 +309,13 @@ def cli_roster_pilot():
     """
     roster_pilot()
 
+@cli.command(name="screening")
+def cli_roster_screening():
+    """
+    roster students for kindergarten screening
+    """
+    roster_screening()
+
 @cli.command(name="additional_users")
 def cli_additional_users():
     """
@@ -259,6 +331,7 @@ def all():
     roster_k3()
     roster_412()
     roster_pilot()
+    roster_screening()
     users()
 
 if __name__ == '__main__':

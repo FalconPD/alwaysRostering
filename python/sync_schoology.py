@@ -221,15 +221,14 @@ async def sync(loop, db_file):
 
     AR.init(db_file)
     async with schoology.Session() as Schoology:
-        #await add_update_buildings(loop, Schoology)
-        #(students, teachers, admins, sysadmins, all_ids) = create_user_queries()
-        #await add_update_users(loop, students, teachers, admins, sysadmins,
-        #    Schoology)
+        await add_update_buildings(loop, Schoology)
+        (students, teachers, admins, sysadmins, all_ids) = create_user_queries()
+        await add_update_users(loop, students, teachers, admins, sysadmins,
+            Schoology)
         #await delete_users(loop, all_ids, Schoology)
-        await add_update_courses(loop, Schoology)
+        #await add_update_courses(loop, Schoology)
 
 #    await enroll_students()
-
 
 if __name__ == '__main__':
     main()

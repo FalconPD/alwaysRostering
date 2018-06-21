@@ -5,7 +5,7 @@ import logging
 import re
 from sqlalchemy.orm import column_property
 from sqlalchemy import select, func
-from AR.tables import utils, Base, StudentUserText
+from AR.tables import utils, Base, StudentUserText, ResidentDistrictTracking
 
 class Student(Base):
     __tablename__ = 'STUDENTS'
@@ -182,6 +182,8 @@ class Student(Base):
     homeroom_school_teacher = relationship('SchoolTeacher', uselist=False,
         back_populates='homeroom_students')
     school = relationship('School', uselist=False, back_populates='students')
+    resident_district_tracking = relationship('ResidentDistrictTracking',
+        uselist=False) 
 
     report_code = '991016'
     csv_header = [
@@ -561,6 +563,11 @@ class Student(Base):
         else:
             return ""
 
+#    @property
+#    def next_school(self):
+#        """This can be derived from resident_district_code, grade_level,
+#        the SchoolGradeLevel table and the School table
+#        """
 
     def __repr__(self):
         return (

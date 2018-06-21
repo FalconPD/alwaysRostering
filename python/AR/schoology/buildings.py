@@ -48,6 +48,7 @@ class Buildings(Lookup):
         }
 
         building_id = self.lookup_id(building_code)
+        school_id = self.session.Schools.school_id
         if (building_id): # update
             await self.session.put('schools/' + building_id, json=json_data)
         else: # create
