@@ -5,3 +5,4 @@ MAP/rosters/*
 Genesis/reports/*
 __pycache__/
 *.sqlite3
+*.csv
