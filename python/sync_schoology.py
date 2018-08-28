@@ -19,13 +19,6 @@ def main(db_file, debug):
 
     if debug:
         logging.basicConfig(level=logging.DEBUG)
-#        loop.set_debug(True)
-#        http.client.HTTPConnection.debuglevel = 1
-#        logging.basicConfig()
-#        logging.getLogger().setLevel(logging.DEBUG)
-#        requests_log = logging.getLogger("requests.packages.urllib3")
-#        requests_log.setLevel(logging.DEBUG)
-#        requests_log.propagate = True
     else:
         logging.basicConfig(level=logging.WARNING)
 
@@ -33,7 +26,7 @@ def main(db_file, debug):
     loop.close()
 
 async def create_task(tasks, loop, function):
-    """Little wrapper to make and start a task and print status"""
+    """Little wrapper to make a task, start a task, and print status"""
 
     tasks.append(
         loop.create_task(function)
@@ -98,9 +91,10 @@ def create_user_queries():
     return (students, teachers, admins, sysadmins, all_ids)
 
 async def delete_users(loop, all_ids, Schoology):
-    """Takes a set of all valid genesis IDs and deletes users in Schoology
-    that aren't in that set."""
-
+    """
+    Takes a set of all valid genesis IDs and deletes users in Schoology
+    that aren't in that set.
+    """
     print('Deleting users with unknown IDs in Schoology')
     async with Schoology.Users as Users:
         checked = 0
@@ -157,7 +151,7 @@ async def add_update_users(loop, students, teachers, admins, sysadmins,
             )
         print('Adding / Updating sysadmins in Schoology...')
         for sysadmin in sysadmins:
-            tasks = await create_task(tasks, loop,
+           tasks = await create_task(tasks, loop,
                 Users.add_update(
                     school_uid=sysadmin.teacher_id,
                     email=sysadmin.email,
@@ -169,8 +163,9 @@ async def add_update_users(loop, students, teachers, admins, sysadmins,
         await asyncio.gather(*tasks)
 
 async def add_update_courses(loop, Schoology):
-    """Adds / Updates courses in Schoology"""
-
+    """
+    Adds / Updates courses in Schoology
+    """
     print('Adding / Updating {} courses...'.format(AR.courses().count()))
 
     async with Schoology.Courses as Courses:
@@ -190,45 +185,36 @@ async def add_update_courses(loop, Schoology):
             )
         await asyncio.gather(*tasks)
 
-def create_enrollments():
-    """Yields student enrollments in blocks of 50"""
+async def enroll(loop, Schoology):
+    """
+    Enrolls teachers and students in their courses
+    """
+    print('Enrolling students and teachers in courses...')
 
-    enrollments = []
-
-    for course in AR.courses():
-        for section in course.sections:
-            for student in section.active_students:
-                enrollments.append(
-                    schoology.enrollments.create_object(
-                        section_school_code=section.section_school_code,
-                        school_uid=student.student_id
-                    )
-                )
-                if len(enrollments) == 50:
-                    yield enrollments
-                    enrollments = []
-    if len(enrollments) > 0:
-        yield enrollments
-
-async def enroll_students():
-    """Enrolls students in Schoology"""
-
-    for enrollments in create_enrollments():
-        pp.pprint(enrollments)
+    async with Schoology.Enrollments as Enrollments:
+        tasks = []
+        for course in AR.courses():
+            for section in course.active_sections:
+                print('section_school_code={} school_uid={} admin={}'.format(
+                    section.section_school_code,
+                    section.first_subsection.teacher_id, True)) 
+                for student in section.active_students:
+                    print('section_school_code={} school_uid={} admin={}'.format(
+                        section.section_school_code, student.student_id, False))
 
 async def sync(loop, db_file):
-    """Performs all steps to sync Schoology with a Genesis Database"""
-
+    """
+    Performs all steps to sync Schoology with a Genesis Database
+    """
     AR.init(db_file)
     async with schoology.Session() as Schoology:
-        await add_update_buildings(loop, Schoology)
-        (students, teachers, admins, sysadmins, all_ids) = create_user_queries()
-        await add_update_users(loop, students, teachers, admins, sysadmins,
-            Schoology)
+        #await add_update_buildings(loop, Schoology)
+        #(students, teachers, admins, sysadmins, all_ids) = create_user_queries()
+        #wait add_update_users(loop, students, teachers, admins, sysadmins,
+        #    Schoology)
         #await delete_users(loop, all_ids, Schoology)
         #await add_update_courses(loop, Schoology)
-
-#    await enroll_students()
+        await enroll(loop, Schoology)
 
 if __name__ == '__main__':
     main()

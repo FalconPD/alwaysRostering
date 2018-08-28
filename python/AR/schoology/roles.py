@@ -1,5 +1,4 @@
 from AR.schoology.lookup import Lookup
-import logging
 
 class Roles(Lookup):
     """Class for handling roles"""

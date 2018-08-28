@@ -266,13 +266,14 @@ class CourseSection(Base):
 
     @property
     def name(self):
-        """Returns a friendly name for the course section depending on your
-        school. Should end up being the same for merged courses."""
-
+        """
+        Returns a friendly name for the course section depending on your
+        school. Should end up being the same for merged courses.
+        """
         if self.school_code == 'MTHS':
             return '{}{} {}'.format(self.period, self.day,
                 self.course.course_description)
-        elif self.school_code == 'AMS':
+        elif self.school_code == 'MTMS':
             return 'Period {} {}'.format(self.period,
                 self.course.course_description)
         return '{} {} {}'.format(self.course_code, self.course_section,
@@ -280,11 +281,12 @@ class CourseSection(Base):
 
     @property
     def section_school_code(self):
-        """Returns an identifier unique across the whole district. Merged
+        """
+        Returns an identifier unique across the whole district. Merged
         courses should get the same result.
         
-        Format: <School Code> [(<Course Code 1>, <Course Section 1>), ...]"""
-
+        Format: <School Code> [(<Course Code 1>, <Course Section 1>), ...]
+        """
         course_sections = ['({}, {})'.format(
             self.course_code,
             self.course_section

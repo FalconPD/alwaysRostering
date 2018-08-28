@@ -32,10 +32,13 @@ class Users(AddDel):
         await self.dels.add(uid)
 
     async def send_adds(self, adds):
-        """Sends request to add users"""
-
+        """
+        Sends request to add users. Specifies to update existing users and
+        merge existing accounts with our domain if found.
+        """
         json_data = { 'users': { 'user': adds } }
-        params = { 'update_existing': 1 }
+        params = { 'update_existing': 1,
+                   'email_conflict_resolution': 2 }
         await self.session.post('users', json=json_data, params=params)
 
     async def send_dels(self, dels):

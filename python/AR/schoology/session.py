@@ -11,16 +11,20 @@ from AR.schoology.roles import Roles
 from AR.schoology.buildings import Buildings
 from AR.schoology.users import Users
 from AR.schoology.courses import Courses
+from AR.schoology.enrollments import Enrollments
 
 class Session():
-    """A context manager to abstract loading of lookup tables and session
-    management"""
-
+    """
+    A context manager to abstract loading of lookup tables and session
+    management
+    """
     sem = asyncio.Semaphore(constants.HTTP_MAX_REQUESTS)
     credentials = json.load(open(constants.CREDENTIALS_PATH))
 
     async def __aenter__(self):
-        """Creates an aiohttp session and loads helper classes"""
+        """
+        Creates an aiohttp session and loads helper classes
+        """
         self.session = aiohttp.ClientSession()
 
         # These generate some web traffic
@@ -32,6 +36,7 @@ class Session():
         # These do not
         self.Users = await Users.create(self)
         self.Courses = await Courses.create(self)
+        self.Enrollments = await Enrollments.create(self)
 
         return self
 
@@ -53,8 +58,9 @@ class Session():
         }
 
     async def request(self, method, endpoint, json=None, params=None):
-        """Perform a HTTP request with throttling and handle the response"""
-
+        """
+        Perform a HTTP request with throttling and handle the response
+        """
         # Add the BASE_URL if needed
         url = endpoint if endpoint.startswith(constants.BASE_URL) else (constants.BASE_URL + endpoint)
       

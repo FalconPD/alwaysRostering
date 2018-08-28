@@ -1,3 +1,5 @@
+import logging
+
 class Lookup():
     """General class for our lookup table classes"""
 
@@ -21,6 +23,8 @@ class Lookup():
         for datum in self.data:
             if datum[self.lookup_by] == comparison:
                 return datum['id']
+        logging.warning('Unable to lookup {} (endpoint={})'.format(
+            comparison, self.endpoint))
         return None
 
     async def list(self):

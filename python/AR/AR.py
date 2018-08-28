@@ -8,7 +8,7 @@ import re
 
 grade_levels = ['KH', 'KF', '01', '02', '03', '04', '05', '06', '07', '08', '09',
     '10', '11', '12']
-school_codes = ['AES', 'AMS', 'BBS', 'BES', 'MLS', 'MTHS', 'OTS', 'WES']
+school_codes = ['AES', 'BBS', 'BES', 'MLS', 'MTHS', 'MTMS', 'OTS', 'WES']
 teacher_job_codes = ['1001', '1003', '1004', '1007', '1015', '1017', '1018',
     '1102', '1103', '1104', '1106', '1150', '1200', '1273', '1283', '1301',
     '1308', '1315', '1317', '1331', '1345', '1401', '1485', '1500', '1510',
@@ -98,9 +98,10 @@ def schools():
     )
 
 def courses():
-    """Returns a query of active courses with sections that have at least one
-    student in them. DOES NOT include Homeroom courses"""
-
+    """
+    Returns a query of active courses with sections that have at least one
+    student in them. DOES NOT include Homeroom courses
+    """
     return (
         db_session.query(CurriculumCourse)
         .filter(CurriculumCourse.course_code != '000')

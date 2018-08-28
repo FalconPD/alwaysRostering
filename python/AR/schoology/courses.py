@@ -20,7 +20,7 @@ class Courses(AddDel):
             course['sections']['section'].append({
                 'title': section['title'],
                 'section_school_code': section['section_school_code'],
-                'grading_periods': [556703], #TODO: Setup and pull grading periods
+                'grading_periods': [589077], #TODO: Setup and pull grading periods
                                              #from SchoolAttendanceCycle in Genesis
                 'synced': 1
             })
