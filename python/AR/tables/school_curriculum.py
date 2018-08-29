@@ -2,8 +2,7 @@ from sqlalchemy import Column, Integer, String, Boolean, BigInteger, Date, DateT
 from sqlalchemy.orm import relationship
 from AR.tables import Base
 from AR.tables import utils
-import re
-import logging
+from AR.tables import CourseSection
 
 class CurriculumCourse(Base):
     __tablename__ = 'SCHOOL_CURRICULUM'
@@ -124,7 +123,8 @@ class CurriculumCourse(Base):
     team_code = Column('TEAM_CODE', String(8))
     tech_prep = Column('TECH_PREP', Boolean, nullable=False)
 
-    sections = relationship('CourseSection', back_populates='course')
+    # this is set to dynamic so we can filter it for active_sections later
+    sections = relationship('CourseSection', back_populates='course', lazy='dynamic')
 
     report_code = '991067'
     csv_header = [ 
@@ -368,13 +368,9 @@ class CurriculumCourse(Base):
     @property
     def active_sections(self):
         """
-        Returns a list of sections for this course that have students in them
+        Returns a query of sections for this course that have students in them
         """
-        active_sections = []
-        for section in self.sections:
-            if section.assigned_seats > 0:
-                active_sections.append(section)
-        return active_sections
+        return self.sections.filter(CourseSection.assigned_seats > 0)
 
     def __repr__(self):
         return (

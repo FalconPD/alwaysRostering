@@ -25,10 +25,11 @@ class Users(AddDel):
         await self.adds.add(user)
 
     async def delete(self, uid):
-        """Deletes users
+        """
+        Deletes users
         Defaults: do not notify via email, keeps attendance and grade info, and
-        set comment to 'automated delete'"""
-        
+        set comment to 'automated delete'
+        """
         await self.dels.add(uid)
 
     async def send_adds(self, adds):
@@ -42,8 +43,9 @@ class Users(AddDel):
         await self.session.post('users', json=json_data, params=params)
 
     async def send_dels(self, dels):
-        """Sends a request to delete users"""
-
+        """
+        Sends a request to delete users
+        """
         params = {
             'uids': ','.join(map(str, dels)),
             'option_comment': 'automated delete',

@@ -39,7 +39,7 @@ class Enrollments():
         """
         await self.enroll(section_school_code, school_uid, admin, delete=True)
 
-    async def enroll(self, section_school_code, school_uid, delete, admin=False):
+    async def enroll(self, section_school_code, school_uid, admin, delete):
         """
         Create an enrollment and put it in the queue
         """
@@ -57,5 +57,5 @@ class Enrollments():
         """
         POSTs a group of enrollments
         """
-        json_data = { 'enrollments': { 'enrollment': self.enrollments } }
+        json_data = { 'enrollments': { 'enrollment': enrollments } }
         await self.session.post('enrollments/import/course', json=json_data)

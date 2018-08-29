@@ -1,8 +1,12 @@
-#Role Assignments in Schoology
+# Roles
 
-A user in Schoology can be either a Teacher, Admin, System Admin, Student or Parent. Staff are broken down as follows: 
+alwaysRostering has methods can create queries for various roles commonly used in subscription services.  These queries are for active staff or students. Staff roles are: Staff, Teacher, Admin, Sysadmin, or Student.
 
-##Teacher (by job code)
+## Staff: staff() (filtered by job code)
+
+All active staff that currently have a State ID. This filters out shared teachers.
+
+## Teacher: teachers() (filtered by job code)
 
 * 1001: Elementary Kindergarten - 8th Grade
 * 1003: Kindergarten
@@ -59,7 +63,7 @@ A user in Schoology can be either a Teacher, Admin, System Admin, Student or Par
 * 2405: Resource Program In-Class
 * 2406: Resource Program Pull-Out Support
 
-##Admin (by job code)
+## Admin: admins() (filtered by job code)
 
 * 0102: Superintendent
 * 0122: Assistant Superintendent
@@ -82,8 +86,12 @@ A user in Schoology can be either a Teacher, Admin, System Admin, Student or Par
 * 0524: Director Special Ed
 * 2410: Teacher Coach
 
-##System Admin (by job code and manually configured)
+## System Admin: sysadmins() (filtered by job code and manually added)
 
 * 9200: Technicians
 * Director of Information Technology
 * Educational Technology Facilitator
+
+## Students: students()
+
+All active, in-district students

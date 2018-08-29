@@ -1,11 +1,13 @@
 from AR.schoology.queue import AddDel
 
 class Courses(AddDel):
-    """Class for dealing with Courses"""
-
+    """
+    Class for dealing with Courses
+    """
     async def add_update(self, building_code, title, course_code, sections=[]):
-        """Takes a list of courses and adds/updates them"""
-
+        """
+        Takes a list of courses and adds/updates them
+        """
         building_id = self.session.Buildings.lookup_id(building_code)
 
         course = {
@@ -28,20 +30,25 @@ class Courses(AddDel):
         await self.adds.add(course)
 
     async def send_adds(self, adds):
-        """Sends out a request to add courses"""
-
+        """
+        Sends out a request to add courses
+        """
         params = { 'update_existing': 1 }
         json_data = { 'courses' : { 'course': adds }} 
         await self.session.post('courses/', json=json_data, params=params)
 
     async def send_dels(self, dels):
-        """Sends out a request to delete courses"""
+        """
+        Sends out a request to delete courses
+        """
 
         params = { 'course_ids': ','.join(map(str, dels)) }
         await self.session.delete('courses', params=params)
 
     async def list(self, building_code=None):
-        """Lists all the courses. You can optionally specify a building"""
+        """
+        Lists all the courses. You can optionally specify a building
+        """
 
         # couldnt' figure out a nice, clean way to do this with the params argument
         endpoint = 'courses' 

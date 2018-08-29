@@ -305,8 +305,9 @@ class CourseSection(Base):
 
     @property
     def active_students(self):
-        """Returns a list of active students in this section"""
-
+        """
+        Returns a list of active students in this section
+        """
         students=[]
         for student_schedule in self.student_schedules:
             if student_schedule.course_status == 'ACTIVE':

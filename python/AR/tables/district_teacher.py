@@ -380,9 +380,9 @@ class DistrictTeacher(Base):
     @property
     def real_teacher(self):
         """
-        Trys to find a real that corresponds to this instance. Some accounts
-        are half-day kindergarten accounts that don't have actual teacher info
-        in them. Returns its own ID if this instance is real
+        Trys to find a real teacher that corresponds to this instance. Some
+        accounts are half-day kindergarten accounts that don't have actual
+        teacher info in them. Returns its own ID if this instance is real
         """
         if not self.include_in_njsmart: # and self.state_id_number == "":
             # Find the teacher with the same first/last name but a different

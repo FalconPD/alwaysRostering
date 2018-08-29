@@ -34,8 +34,9 @@ def init(db_file):
     return db_session
 
 def students():
-    """Returns a query of active, in-district students."""
-
+    """
+    Returns a query of active, in-district students.
+    """
     return (
         db_session.query(Student)
         .filter(Student.enrollment_status == 'ACTIVE')
@@ -45,10 +46,11 @@ def students():
     )
 
 def staff():
-    """Returns a query of real, active staff
-    NOTE: state_id_number, data_1 (user_id) have to be set for staff to be
-    considered real and active"""
-
+    """
+    Returns a query of real, active staff
+    NOTE: state_id_number has to be set for staff to be considered real and
+    active
+    """
     return (
         db_session.query(DistrictTeacher)
         .filter(DistrictTeacher.employment_status == 'A')
@@ -57,8 +59,9 @@ def staff():
     )
 
 def staff_by_job_codes(job_codes):
-    """Returns a query for staff with particular job codes"""
-
+    """
+    Returns a query for staff with particular job codes
+    """
     return (
         staff().filter(DistrictTeacher.job_roles.any(
             StaffJobRole.job_code.in_(job_codes)
@@ -66,19 +69,22 @@ def staff_by_job_codes(job_codes):
     )
 
 def teachers():
-    """Returns a query of teachers"""
-
+    """
+    Returns a query of teachers
+    """
     return staff_by_job_codes(teacher_job_codes)
 
 def admins():
-    """Returns a query of administrators"""
-
+    """
+    Returns a query of administrators
+    """
     return staff_by_job_codes(admin_job_codes)
 
 def sysadmins():
-    """Returns a query of sysadmins.
-    Manually adds Ed Tech Facilitator and Director of IT by ID"""
-
+    """
+    Returns a query of sysadmins.
+    Manually adds Ed Tech Facilitator and Director of IT by ID
+    """
     extra_ids = ['099', '9999']
     extra_query = (
         db_session.query(DistrictTeacher)
@@ -90,8 +96,9 @@ def sysadmins():
     )
 
 def schools():
-    """Returns a query of in-district schools"""
-
+    """
+    Returns a query of in-district schools
+    """
     return (
         db_session.query(School)
         .filter(School.building_code.in_(school_codes))
@@ -108,4 +115,20 @@ def courses():
         .filter(CurriculumCourse.course_active == True)
         .filter(CurriculumCourse.school_code.in_(school_codes))
         .filter(CurriculumCourse.sections.any(CourseSection.assigned_seats > 0))
+    )
+
+def sections():
+    """
+    Returns a query of active sections in all courses returned by courses()
+    """
+    return (
+        courses()
+        .join(CourseSection)
+        .filter(CourseSection.assigned_seats > 0)
+        .with_entities(CourseSection)
+        #db_session.query(CourseSection)
+        #.filter(CurriculumCourse.course_code != '000')
+        #.filter(CourseSection.course.course_active == True)
+        #.filter(CourseSection.course.school_code.in_(school_codes))
+        #.filter(CourseSection.assigned_seats > 0)
     )
