@@ -12,6 +12,7 @@ from AR.schoology.buildings import Buildings
 from AR.schoology.users import Users
 from AR.schoology.courses import Courses
 from AR.schoology.enrollments import Enrollments
+from AR.schoology.course_sections import CourseSections
 
 class Session():
     """
@@ -37,6 +38,7 @@ class Session():
         self.Users = await Users.create(self)
         self.Courses = await Courses.create(self)
         self.Enrollments = await Enrollments.create(self)
+        self.CourseSections = await CourseSections.create(self)
 
         return self
 
@@ -108,29 +110,34 @@ class Session():
             logging.warning('Retry {}')
 
     async def get(self, endpoint, params=None):
-        """Shortcut for HTTP GET"""
-
+        """
+        Shortcut for HTTP GET
+        """
         return await self.request('GET', endpoint, params=params) 
 
     async def put(self, endpoint, params=None, json=None):
-        """Shortcut for HTTP PUT"""
-
+        """
+        Shortcut for HTTP PUT
+        """
         return await self.request('PUT', endpoint, params=params, json=json) 
 
     async def post(self, endpoint, params=None, json=None):
-        """Shortcut for HTTP POST"""
-
+        """
+        Shortcut for HTTP POST
+        """
         return await self.request('POST', endpoint, params=params, json=json)
 
     async def delete(self, endpoint, params=None):
-        """Shortcut for HTTP DELETE"""
-
+        """
+        Shortcut for HTTP DELETE
+        """
         return await self.request('DELETE', endpoint, params=params)
 
     async def list_pages(self, next_link):
-        """Generic function for API calls that list things. Yields one page at a
-        time"""
-
+        """
+        Generic function for API calls that list things. Yields one page at a
+        time
+        """
         while next_link != None:
             resp = await self.get(next_link)
             json_response = await(resp.json())

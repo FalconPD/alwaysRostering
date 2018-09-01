@@ -193,7 +193,7 @@ async def add_update_courses(loop, Schoology):
             )
         await asyncio.gather(*tasks)
 
-async def enroll(loop, Schoology):
+async def add_enrollments(loop, Schoology):
     """
     Enrolls teachers and students in their courses
     """
@@ -205,32 +205,79 @@ async def enroll(loop, Schoology):
             # enroll the teacher
             section_school_code = section.section_school_code
             teacher_id = section.first_subsection.teacher_id
-            if teacher_id == '5433':
-                tasks = await create_task(tasks, loop,
-                    Enrollments.add(section_school_code, teacher_id, admin=True)
-                )
+            tasks = await create_task(tasks, loop,
+                Enrollments.add(section_school_code, teacher_id, admin=True)
+            )
            # enroll the students
             for student in section.active_students:
                 student_id = student.student_id
-                if teacher_id == '5433':
-                    tasks = await create_task(tasks, loop,
-                        Enrollments.add(section_school_code, student_id)
-                    )
+                tasks = await create_task(tasks, loop,
+                    Enrollments.add(section_school_code, student_id)
+                )
         await asyncio.gather(*tasks)
 
+def print_flush(string):
+    """
+    Prints a string without a newline and with flush=True. Used by getinfo
+    """
+    print(string, end='', flush=True)
+
+def add_list(current, new):
+    """
+    Adds two lists, prints the size of the new list (without newline) and
+    returns the new list. Used by get_info
+    """
+    updated = current + new
+    print_flush(" {}".format(len(updated)))
+    return updated
+
+async def check(Schoology):
+    """
+    Checks for irregularities in the course information on Schoology
+    """
+    print("Checking for possible issues in Schoology...")
+
+    # Get the info from Genesis
+    genesis_section_school_codes = [ section.section_school_code for section in
+        AR.sections() ]
+
+    # Get the info from Schoology
+    schoology_courses = []
+    schoology_course_sections = []
+    print_flush("Getting Schoology courses:")
+    async with Schoology.Courses as Courses:
+        async for courses in Courses.list():
+            schoology_courses = add_list(schoology_courses, courses)
+    print_flush("\nGetting Schoology course sections:")
+    async with Schoology.CourseSections as CourseSections:
+        for course in schoology_courses:
+            async for course_sections in CourseSections.list(course['id']):
+                schoology_course_sections = add_list(
+                schoology_course_sections, course_sections)
+
+    print("\nSynced Schoology sections NOT in Genesis:")
+    for schoology_section in schoology_course_sections:
+        if schoology_section['synced'] == '1':
+            if schoology_section['section_school_code'] not in genesis_section_school_codes:
+                print("{} Schoology ID: {}".format(
+                    schoology_section['section_school_code'],
+                    schoology_section['id']))
+        
 async def sync(loop, db_file):
     """
-    Performs all steps to sync Schoology with a Genesis Database
+    Performs all steps to sync Schoology with a Genesis Database and perform
+    some checks
     """
     AR.init(db_file)
     async with schoology.Session() as Schoology:
-        #await add_update_buildings(loop, Schoology)
-        #(students, teachers, admins, sysadmins, all_ids) = create_user_queries()
-        #await add_update_users(loop, students, teachers, admins, sysadmins,
-        #    Schoology)
-        #await delete_users(loop, all_ids, Schoology)
-        #await add_update_courses(loop, Schoology)
-        await enroll(loop, Schoology)
+        await add_update_buildings(loop, Schoology)
+        (students, teachers, admins, sysadmins, all_ids) = create_user_queries()
+        await add_update_users(loop, students, teachers, admins, sysadmins,
+            Schoology)
+        await delete_users(loop, all_ids, Schoology)
+        await add_update_courses(loop, Schoology)
+        await add_enrollments(loop, Schoology)
+        await check(Schoology)
 
 if __name__ == '__main__':
     main()

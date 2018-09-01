@@ -1,9 +1,10 @@
 from AR.schoology.lookup import Lookup 
 
 class Schools(Lookup):
-    """Class for handling Schools. Doesn't actually do any lookups, just sets
-    school_id"""
-
+    """
+    Class for handling Schools. Doesn't actually do any lookups, just sets
+    school_id
+    """
     endpoint = 'schools'
     heading = 'school'
 

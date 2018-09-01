@@ -15,7 +15,7 @@ teacher_job_codes = ['1001', '1003', '1004', '1007', '1015', '1017', '1018',
     '1530', '1540', '1550', '1607', '1630', '1700', '1706', '1760', '1805',
     '1812', '1821', '1856', '1897', '1901', '1962', '2100', '2110', '2130',
     '2202', '2206', '2231', '2235', '2236', '2302', '2322', '2400', '2401',
-    '2405', '2406']
+    '2405', '2406', '3135']
 admin_job_codes = ['0102', '0122', '0201', '0202', '0221', '0222', '0231',
     '0232', '0306', '0310', '0312', '0314', '0315', '0319', '0321', '0322',
     '0324', '0399', '0524', '2410']
@@ -126,9 +126,4 @@ def sections():
         .join(CourseSection)
         .filter(CourseSection.assigned_seats > 0)
         .with_entities(CourseSection)
-        #db_session.query(CourseSection)
-        #.filter(CurriculumCourse.course_code != '000')
-        #.filter(CourseSection.course.course_active == True)
-        #.filter(CourseSection.course.school_code.in_(school_codes))
-        #.filter(CourseSection.assigned_seats > 0)
     )

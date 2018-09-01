@@ -62,6 +62,7 @@ All active staff that currently have a State ID. This filters out shared teacher
 * 2401: Supplementary Instruction (Pull-Out)
 * 2405: Resource Program In-Class
 * 2406: Resource Program Pull-Out Support
+* 3135: Structured Learning Experience Coordinator
 
 ## Admin: admins() (filtered by job code)
 

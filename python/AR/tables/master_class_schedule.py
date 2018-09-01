@@ -186,8 +186,9 @@ class CourseSection(Base):
     
     @property
     def first_active_gb_teacher_section(self):
-        """Finds the FIRST active gradebook for this section"""
-
+        """
+        Finds the FIRST active gradebook for this section
+        """
         for gb_teacher_section in self.gb_teacher_sections:
             if gb_teacher_section.active == True:
                 return gb_teacher_section
@@ -195,8 +196,9 @@ class CourseSection(Base):
 
     @property
     def gb_course_id(self):
-        """Returns the course_id for the FIRST active gradebook for this section"""
-
+        """
+        Returns the course_id for the FIRST active gradebook for this section
+        """
         gb_teacher_section = self.first_active_gb_teacher_section
         if gb_teacher_section != None:
             return gb_teacher_section.course_id
@@ -204,9 +206,10 @@ class CourseSection(Base):
 
     @property
     def merged(self):
-        """Tells you whether this section has a merged gradebook with another
-        section"""
-
+        """
+        Tells you whether this section has a merged gradebook with another
+        section
+        """
         gb_teacher_section = self.first_active_gb_teacher_section
         if gb_teacher_section != None:
             return gb_teacher_section.merged
@@ -214,10 +217,11 @@ class CourseSection(Base):
 
     @property
     def merged_sections(self):
-        """Returns a list of all the sections that share an active, merged
+        """
+        Returns a list of all the sections that share an active, merged
         gradebook with this section. Merged sections DO NOT have to have the
-        same course_code."""
-
+        same course_code.
+        """
         merged_sections = []
         query = (
             object_session(self)
@@ -246,8 +250,9 @@ class CourseSection(Base):
 
     @property
     def day(self):
-        """Gets the meeting day(s) from the first subsection"""
-
+        """
+        Gets the meeting day(s) from the first subsection
+        """
         if self.first_subsection != None:
             if self.first_subsection.meets_cycles != '':
                 return self.first_subsection.meets_cycles
@@ -256,8 +261,9 @@ class CourseSection(Base):
 
     @property
     def period(self):
-        """Gets the meeting period(s) from the first subsection"""
-
+        """
+        Gets the meeting period(s) from the first subsection
+        """
         if self.first_subsection != None:
             if self.first_subsection.print_period != '':
                 return self.first_subsection.print_period

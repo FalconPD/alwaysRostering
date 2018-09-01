@@ -513,7 +513,7 @@ class Student(Base):
     @property
     def email(self):
         if self.user_id:
-            return str(self.user_id) + '@monroe.k12.nj.us'
+            return str(self.user_id) + '@students.monroe.k12.nj.us'
         return None
 
     @property

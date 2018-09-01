@@ -41,7 +41,6 @@ class Courses(AddDel):
         """
         Sends out a request to delete courses
         """
-
         params = { 'course_ids': ','.join(map(str, dels)) }
         await self.session.delete('courses', params=params)
 
@@ -49,7 +48,6 @@ class Courses(AddDel):
         """
         Lists all the courses. You can optionally specify a building
         """
-
         # couldnt' figure out a nice, clean way to do this with the params argument
         endpoint = 'courses' 
         if building_code:

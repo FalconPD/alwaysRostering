@@ -1,15 +1,18 @@
 from AR.schoology.lookup import Lookup
 
 class Buildings(Lookup):
-    """Class for handling Buildings"""
-
+    """
+    Class for handling Buildings
+    """
     heading = 'building'
     lookup_by = 'building_code'
 
     @classmethod
     async def create(cls, session):
-        """Custom create function needed to set the endpoint as it requires
-        a lookup of school_id"""
+        """
+        Custom create function needed to set the endpoint as it requires
+        a lookup of school_id
+        """
 
         self = cls()
         self.session = session
@@ -18,9 +21,10 @@ class Buildings(Lookup):
         return self
 
     async def __aenter__(self):
-        """After adding buildings, it's important that you reload them for the
-        lookup table. This context manager simplifies that."""
-        
+        """
+        After adding buildings, it's important that you reload them for the
+        lookup table. This context manager simplifies that.
+        """
         return self
 
     async def __aexit__(self, *exc):
@@ -29,9 +33,10 @@ class Buildings(Lookup):
     async def add_update(self, title, building_code, address1='', address2='',
         city='Monroe Township', state='NJ', postal_code='08831', country='USA',
         website='', phone='', fax='', picture_url=''):
-        """Looks up a building, if it doesn't exist creates it, otherwise updates
-        its information. Has some built-in defaults for Monroe"""
-
+        """
+        Looks up a building, if it doesn't exist creates it, otherwise updates
+        its information. Has some built-in defaults for Monroe
+        """
         json_data = {
             'title': title,
             'building_code': building_code,

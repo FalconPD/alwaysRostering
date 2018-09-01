@@ -18,7 +18,7 @@ class Enrollments():
         """
         Create our queue
         """
-        self.enrollments = Queue(self.send_enrollments)
+        self.enrollments = Queue(self.send)
         return self
 
     async def __aexit__(self, *exc):
@@ -53,9 +53,17 @@ class Enrollments():
             enrollment['delete'] = '1'
         await self.enrollments.add(enrollment)
 
-    async def send_enrollments(self, enrollments):
+    async def send(self, enrollments):
         """
         POSTs a group of enrollments
         """
         json_data = { 'enrollments': { 'enrollment': enrollments } }
         await self.session.post('enrollments/import/course', json=json_data)
+
+    async def list(self, section_id):
+        """
+        lists all the course enrollment data for a section from Schoology
+        """
+        endpoint = 'section/' + str(section_id) + '/enrollments'
+        async for response in self.session.list_pages(endpoint):
+            yield response['enrollment']
