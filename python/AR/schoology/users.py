@@ -1,18 +1,21 @@
 from AR.schoology.queue import AddDel
 
 class Users(AddDel):
-    """Handles our user operations"""
-
+    """
+    Handles our user operations
+    """
     async def list(self):
-        """Returns a lists of users one page at a time."""
-
+        """
+        Returns a lists of users one page at a time.
+        """
         async for json_response in self.session.list_pages('users'):
             yield json_response['user'] 
 
     async def add_update(self, school_uid, name_first, name_last, email, role):
-        """Makes a user object, adds it to the queue, and if the queue is at
-        the chunk_size it sends out a request to add that block of users"""
-
+        """
+        Makes a user object, adds it to the queue, and if the queue is at
+        the chunk_size it sends out a request to add that block of users
+        """
         user = {
             'school_uid': school_uid,
             'name_first': name_first,

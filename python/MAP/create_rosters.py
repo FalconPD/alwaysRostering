@@ -61,7 +61,6 @@ def roster_k3():
     """
     roster grades K-3 and programs by HR teacher
     """
-    
     grade_levels = ['KH', 'KF', '01', '02', '03']
 
     # certain programs in certain buildings also need to be rostered by HR
@@ -89,6 +88,24 @@ def roster_k3():
             row = add_student_to_row(row, student)
             standard_roster.writerow(row)
 
+    print("Rostering K-3 classes that aren't in Genesis...")
+    for class_name, class_info in constants.EXTRA_CLASSES.items(): 
+        teacher =  (AR.teachers()
+            .filter(DistrictTeacher.teacher_id==class_info['teacher_id'])
+            .one()
+        )
+        print("* {} {}".format(class_name, teacher))
+        for student_id in class_info['student_ids']:
+            student = (AR.students()
+                .filter(Student.student_id==student_id)
+                .one()
+            )
+            row = add_school_to_row({}, student.school)
+            row['Class Name'] = class_name
+            row = add_teacher_to_row(row, teacher)
+            row = add_student_to_row(row, student)
+            standard_roster.writerow(row)
+    
 def roster_screening():
     """
     roster pre-registered students for screening
@@ -143,7 +160,6 @@ def roster_screening():
             row = add_teacher_to_row(row, teacher)
             standard_roster.writerow(row)
 
-
 def roster_412():
     """
     roster grades 4-12 by course
@@ -163,10 +179,14 @@ def roster_412():
             for section in course.active_sections:
                 row['Class Name'] = section.name
                 teacher_id = section.first_subsection.teacher_id
-                district_teacher = (AR.teachers()
+                query = (AR.teachers()
                     .filter(DistrictTeacher.teacher_id==teacher_id)
-                    .one()
                 )
+                if query.count() != 1:
+                    print("Unable to lookup teacher_id: {} for section: {}"
+                        .format(teacher_id, section))
+                    continue
+                district_teacher = query.one()
                 row = add_teacher_to_row(row, district_teacher)
                 for student in section.active_students:
                     row = add_student_to_row(row, student)
@@ -178,55 +198,16 @@ def roster_412():
                             row = add_student_to_row(row, student)
                             standard_roster.writerow(row)
 
-def roster_pilot():
-    """
-    roster the HS MAP pilot
-    """
-    print("Rostering HS pilot students by course...")
-    school_code = 'MTHS'
-    school = AR.schools().filter(School.school_code==school_code).one()
-    row=add_school_to_row({}, school)
-    course_sections = (
-        ('0710', '6'),  # Algebra II
-        ('0710', '7'),  # Algebra II
-        ('0710', '8'),  # Algebra II
-        ('0724', '4'),  # Dynamics of Algebra II
-        ('0724', '5'),  # Dynamics of Algebra II
-        ('0709', '2'),  # Geometry
-        ('0723', '1'),  # Dynamics of Geometry
-        ('0601', '8'),  # Language Arts I
-        ('0601', '9'),  # Language Arts I
-        ('0601', '10'), # Language Arts I
-        ('0602', '4'),  # Honors Language Arts I
-        ('0606', '9'),  # Language Arts III
-        ('0606', '12'), # Language Arts III
-        ('0606', '13'), # Language Arts III
-        ('0606', '14'), # Language Arts III
-        ('0606', '15'), # Language Arts III
-        ('0603', '4'),  # Language Arts II
-        ('0603', '5'),  # Language Arts II
-        ('0603', '6'),  # Language Arts II
-        ('0628', '1'),  # LA IV Contemp Iss/Monster Lit
-        ('0628', '2'),  # LA IV Contemp Iss/Monster Lit
-    )
-    for course_code, course_section in course_sections:
-        section = (AR.db_session.query(CourseSection)
-            .filter(CourseSection.course_code==course_code)
-            .filter(CourseSection.course_section==course_section)
-            .filter(CourseSection.school_code==school_code)
-            .one()
-        )
-        row['Class Name'] = section.name
-        district_teacher = section.first_subsection.teacher
-        print("* {} {}".format(section.name, district_teacher.last_name))
-        row = add_teacher_to_row(row, district_teacher)
+    print("Adding 5th grade Accelerated Math students to HR teacher's math class...")
+    for section in AR.sections().filter(CourseSection.course_code=="159"):
         for student in section.active_students:
-            row = add_student_to_row(row, student)
-            standard_roster.writerow(row)
-            # Also add students from any merged sections
-            if section.merged:
-                for section in section.merged_sections:
-                    for student in section.active_students:
+            for teacher in student.homeroom_teachers:
+                for hr_math_section in AR.sections().filter(CourseSection.course_code=="150"):
+                    if hr_math_section.first_subsection.teacher_id == teacher.teacher_id:
+                        school = AR.schools().filter(School.school_code==hr_math_section.school_code).one()
+                        row = add_school_to_row({}, school)
+                        row['Class Name'] = section.name
+                        row = add_teacher_to_row(row, teacher)
                         row = add_student_to_row(row, student)
                         standard_roster.writerow(row)
 
@@ -274,7 +255,15 @@ def cli(debug, db_file, prefix):
     else:
         logging.basicConfig()
 
-    AR.init(db_file)
+    db_session = AR.init(db_file)
+
+    # Temporary fixes for erroneous Genesis data
+
+    # Invalid shared HR teacher at WES
+    district_teacher = db_session.query(DistrictTeacher).filter(DistrictTeacher.teacher_id=="8211").one()
+    district_teacher.shared_teacher = True
+    district_teacher.shared_teacher_id_1 = "2108"
+    district_teacher.shared_teacher_id_2 = "6943"
 
     output = prefix + '_StandardRoster.csv'
     csvfile = open(output, 'w', newline='')
@@ -302,13 +291,6 @@ def cli_roster_412():
     """
     roster_412()
 
-@cli.command(name="pilot")
-def cli_roster_pilot():
-    """
-    roster the HS MAP pilot
-    """
-    roster_pilot()
-
 @cli.command(name="screening")
 def cli_roster_screening():
     """
@@ -330,7 +312,6 @@ def all():
     """
     roster_k3()
     roster_412()
-    roster_pilot()
     roster_screening()
     users()
 

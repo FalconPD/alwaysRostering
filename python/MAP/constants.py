@@ -53,7 +53,48 @@ SCHOOL_COURSE_CODES = {
         '240', # English Language Arts 
         '250', # English Language Arts
     ),
-    'AMS': (
+    'BES': (
+        '140', # Mathematics
+        '150', # Mathematics
+        '159', # Accelerated Math
+        '240', # English Language Arts
+        '250', # English Language Arts
+    ),
+    'MTHS': (
+        '0707',     # Algebra I A/B
+        '0708',     # Algebra I
+        '0709',     # Geometry
+        '0710',     # Algebra II
+        '0716',     # Honors Geometry
+        '0717',     # Honors Algebra II
+        '0717STEM', # Honors Algebra II
+        '0721',     # Dynamics of Trig/Math
+        '0723',     # Dynamics of Geometry
+        '0724',     # Dynamics of Algebra II
+        '0728',     # Precalculus
+        '0729',     # Honors Precalculus
+        '0729STEM', # H Precalculus
+        '0730',     # Honors Calculus
+        '0731',     # Probability & Statistics
+        '0732',     # Advanced Placement Statistics
+        '0734',     # Advanced Placement Calculus BC
+        '0735',     # Advanced Placement Calculus AB
+        '0739',     # Advanced Placement Calculus AB/BC
+        '0601',     # Language Arts I
+        '0602',     # Honors Language Arts 1
+        '0603',     # Language Arts II
+        '0604',     # Honors Language Arts II
+        '0604STEM', # Honors Language Arts II
+        '0606',     # Language Arts III
+        '0607',     # Honors Language Arts III
+        '0607STEM', # Honors Language Arts III
+        '0610',     # Honors Language Arts IV
+        '0620',     # Advanced Placement Language Arts III
+        '0624',     # Honors World Studies Language Arts
+        '0625',     # Honors American Studies I Language
+        '0626',     # Honors American Studies 2 Language
+    ),
+    'MTMS': (
         '105', # Accelerated Math
         '110', # Algebra I
         '111', # Accelerated Algebra I
@@ -64,13 +105,6 @@ SCHOOL_COURSE_CODES = {
         '260', # Language Arts - Sixth Grade
         '270', # Language Arts - Seventh Grade
         '280', # Langauge Arts - Eight Grade 
-    ),
-    'BES': (
-        '140', # Mathematics
-        '150', # Mathematics
-        '159', # Accelerated Math
-        '240', # English Language Arts
-        '250', # English Language Arts
     ),
     'WES': (
         '140', # Mathematics
@@ -85,4 +119,19 @@ SCREENING_PROCTORS = {
     'BBS': ('5030', '629', '5074'),
     'MLS': ('443', '476', '404'),
     'OTS': ('5457', '667', '5076'),
+}
+
+EXTRA_CLASSES = {
+    'OT (Unrostered in Genesis)': {
+        'teacher_id': '586',
+        'student_ids': ('92170', '89897', '89900', '91303', '92518')
+    }, 
+    'ELA (Unrostered in Genesis)': {
+        'teacher_id': '603',
+        'student_ids': ('89662', '92433', '91570', '91931', '90638')
+    },
+    'Math (Unrostered in Genesis)': {
+        'teacher_id': '603',
+        'student_ids': ('89662', '92433', '91570', '90638', '89695')
+    },
 }
