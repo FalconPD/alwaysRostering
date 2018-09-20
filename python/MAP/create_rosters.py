@@ -87,6 +87,15 @@ def roster_k3():
             row = add_teacher_to_row(row, teacher)
             row = add_student_to_row(row, student)
             standard_roster.writerow(row)
+            if teacher.teacher_id in constants.DUPLICATES:
+                row['Class Name'] += ' ' + teacher.teacher_last_name
+                for additional_teacher_id in constants.DUPLICATES[teacher.teacher_id]:
+                    additional_teacher = (AR.teachers()
+                        .filter(DistrictTeacher.teacher_id==additional_teacher_id)
+                        .one()
+                    )
+                    row = add_teacher_to_row(row, additional_teacher)
+                    standard_roster.writerow(row)
 
     print("Rostering K-3 classes that aren't in Genesis...")
     for class_name, class_info in constants.EXTRA_CLASSES.items(): 
@@ -105,7 +114,7 @@ def roster_k3():
             row = add_teacher_to_row(row, teacher)
             row = add_student_to_row(row, student)
             standard_roster.writerow(row)
-    
+
 def roster_screening():
     """
     roster pre-registered students for screening
@@ -206,7 +215,7 @@ def roster_412():
                     if hr_math_section.first_subsection.teacher_id == teacher.teacher_id:
                         school = AR.schools().filter(School.school_code==hr_math_section.school_code).one()
                         row = add_school_to_row({}, school)
-                        row['Class Name'] = section.name
+                        row['Class Name'] = hr_math_section.name
                         row = add_teacher_to_row(row, teacher)
                         row = add_student_to_row(row, student)
                         standard_roster.writerow(row)

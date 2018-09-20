@@ -1,4 +1,5 @@
-"""Allows automated interactions with the Genesis Student Information System.
+"""
+Allows automated interactions with the Genesis Student Information System.
 """
 import logging
 from urllib.parse import urlparse, parse_qs

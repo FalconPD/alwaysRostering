@@ -61,7 +61,7 @@ class Session():
 
     async def request(self, method, endpoint, json=None, params=None):
         """
-        Perform a HTTP request with throttling and handle the response
+        Perform a HTTP request with throttling, error checking, and retries
         """
         # Add the BASE_URL if needed
         url = endpoint if endpoint.startswith(constants.BASE_URL) else (constants.BASE_URL + endpoint)

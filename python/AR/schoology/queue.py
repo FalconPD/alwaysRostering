@@ -36,15 +36,17 @@ class AddDel():
 
     @classmethod
     async def create(cls, session):
-        """Creates an object linked to a session"""
-
+        """
+        Creates an object linked to a session
+        """
         self = cls()
         self.session = session
         return self
 
     async def __aenter__(self):
-        """Creates our queues"""
-
+        """
+        Creates our queues
+        """
         self.adds = Queue(self.send_adds)
         self.dels = Queue(self.send_dels)
         return self
