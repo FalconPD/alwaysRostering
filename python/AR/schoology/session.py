@@ -70,8 +70,9 @@ class Session():
         retries = 0
         while True:
             # Get a semaphore and perform the request
-            async with self.sem, self.session.request(method, url, params=params, json=json,
-                headers=self.create_header()) as resp:
+            async with self.sem:
+                resp = await self.session.request(method, url, params=params, json=json,
+                headers=self.create_header())
 
                 logging.debug('HTTP {} {} params={} json={}'.format(method, url, params,
                     json))

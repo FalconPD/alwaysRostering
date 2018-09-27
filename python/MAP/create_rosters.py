@@ -273,7 +273,7 @@ def cli(debug, db_file, prefix):
     district_teacher.shared_teacher = True
     district_teacher.shared_teacher_id_1 = "2108"
     district_teacher.shared_teacher_id_2 = "6943"
-
+    
     output = prefix + '_StandardRoster.csv'
     csvfile = open(output, 'w', newline='')
     standard_roster = csv.DictWriter(csvfile,
