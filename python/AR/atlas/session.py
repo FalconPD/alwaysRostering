@@ -3,12 +3,9 @@ from AR.atlas import Users
 import json
 import aiohttp
 import logging
-import pprint
 import urllib.parse as urlparse
 from bs4 import BeautifulSoup
 import sys
-
-pp=pprint.PrettyPrinter(indent=4)
 
 class Session():
     """
@@ -20,16 +17,14 @@ class Session():
         """
         self.session = aiohttp.ClientSession()
         await self.login()
-        self.users = await Users.create(self)
-        pp.pprint(self.users.find_by_name("Ryan", "Tolboom"))        
+        self.Users = await Users.create(self)
+        return self
 
     async def __aexit__(self, *exc):
         """
         Closes aiohttp session
         """
         await self.session.close()
-        for cookie in self.session.cookie_jar:
-            print(cookie.key, cookie.value)
 
     async def login(self):
         """

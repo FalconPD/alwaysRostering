@@ -6,3 +6,4 @@ Genesis/reports/*
 __pycache__/
 *.sqlite3
 *.csv
+output.txt
