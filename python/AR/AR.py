@@ -1,6 +1,7 @@
 import logging
 from AR.tables import Base, Student, DistrictTeacher, StaffJobRole, School
-from AR.tables import CurriculumCourse, CourseSection
+from AR.tables import CurriculumCourse, CourseSection, StaffEmploymentRecord
+from sqlalchemy.sql.expression import func
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import json
@@ -32,6 +33,23 @@ def init(db_file):
     Base.metadata.bind = engine
     DBSession = sessionmaker(bind=engine)
     db_session = DBSession()
+
+    # HACK: This goes through the database and sets employment_status to L for
+    # anyone who has been determined to be on leave
+    for teacher in db_session.query(DistrictTeacher):
+        # get the latest employment record
+        last_record = (
+            db_session.query(StaffEmploymentRecord)
+            .filter(StaffEmploymentRecord.teacher_id==teacher.teacher_id)
+            .group_by(StaffEmploymentRecord.teacher_id)
+            .having(func.max(StaffEmploymentRecord.end_date))
+            .one_or_none()
+        )
+        if last_record != None:
+            # if they are inactive AND 30 - maternity, 31 - sabbatical, or 32 - other
+            if (last_record.exit_code in ['30', '31', '32']) and teacher.employment_status != 'A':
+                teacher.employment_status = 'L'
+
     return db_session
 
 def students():
@@ -41,21 +59,20 @@ def students():
     return (
         db_session.query(Student)
         .filter(Student.enrollment_status == 'ACTIVE')
-#        .filter(Student.homebound_status == 'NO')
         .filter(Student.grade_level.in_(grade_levels))
         .filter(Student.current_school.in_(school_codes))
     )
 
 def staff():
     """
-    Returns a query of real, active staff
+    Returns a query of real staff either (A)CTIVE or on (L)EAVE
     NOTE: state_id_number has to be set for staff to be considered real and
     active
     """
     return (
         db_session.query(DistrictTeacher)
-        .filter(DistrictTeacher.employment_status == 'A')
-        .filter(DistrictTeacher.shared_teacher  == False)
+        .filter(DistrictTeacher.employment_status.in_(['A', 'L']))
+        .filter(DistrictTeacher.shared_teacher == False)
         .filter(DistrictTeacher.state_id_number != '')
     )
 

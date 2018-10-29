@@ -3,7 +3,8 @@ import logging
 from sqlalchemy import Column, Integer, String, Boolean, BigInteger, Date
 from sqlalchemy import DateTime, ForeignKeyConstraint
 from sqlalchemy.orm import relationship, object_session
-from AR.tables import Base, utils 
+from AR.tables import Base, utils, StaffEmploymentRecord 
+from sqlalchemy.ext.hybrid import hybrid_property
 
 class DistrictTeacher(Base):
     __tablename__ = 'DISTRICT_TEACHERS'
@@ -109,6 +110,9 @@ class DistrictTeacher(Base):
     teacher_zipcode = Column('TEACHER_ZIPCODE', String(15))
 
     job_roles = relationship('StaffJobRole', back_populates='district_teacher')
+#    employment_records = relationship('StaffEmploymentRecord',
+#        back_populates='district_teacher',
+#        order_by='StaffEmploymentRecord.start_date')
     school_teacher = relationship('SchoolTeacher', viewonly=True,
         back_populates='district_teacher')
     subsections = relationship('CourseSubsection', back_populates='teacher',

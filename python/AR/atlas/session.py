@@ -11,6 +11,7 @@ class Session():
     """
     A context manager to handle logging in, loading users, etc.
     """
+
     async def __aenter__(self):
         """
         Creates an aiohttp session, logs in, gets a list of users
@@ -53,13 +54,13 @@ class Session():
         await self.post('https://authenticate.rubicon.com/api/auth', json=data)
 
         params = { 'Query': 'Login' }
-        response = await self.get('https://monroek12.rubiconatlas.org/c/saml/Webservice.php',
+        response = await self.get(constants.BASE_URL + 'c/saml/Webservice.php',
             params=params, allow_redirects=False)
         location_url = response.headers.get("Location")
         parsed = urlparse.urlparse(location_url, allow_fragments=False)
         saml_request = urlparse.parse_qs(parsed.query)['SAMLRequest'][0]
 
-        relay_state = 'https://monroek12.rubiconatlas.org/Atlas/Authentication/View/Login?AllowLegacyLogin=0'
+        relay_state = constants.BASE_URL + 'Atlas/Authentication/View/Login?AllowLegacyLogin=0'
         params = {
             'RelayState': relay_state,
             'SAMLRequest': saml_request,
