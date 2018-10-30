@@ -14,7 +14,7 @@ class Users():
     Handles users operations
     """
     @classmethod
-    async def create(cls, session):
+    async def create(cls, session, map_file):
         """
         Creates an object linked to a session
         Need a factory function due to async
@@ -22,6 +22,7 @@ class Users():
         self = cls()
         self.session = session
         self.users = await self.load()
+        self.map_file = map_file
         self.id_map = self.load_map()
         return self
 
@@ -59,7 +60,7 @@ class Users():
         function loads the CSV
         """
         id_map = []
-        with open(constants.MAP_PATH, newline='') as csvfile:
+        with open(self.map_file, newline='') as csvfile:
             reader  = csv.DictReader(csvfile)
             for row in reader:
                 id_map.append(row)
@@ -69,8 +70,8 @@ class Users():
         """
         Write the ID map to a CSV file
         """
-        with open(constants.MAP_PATH, 'w', newline='') as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=id_map.keys)
+        with open(self.map_file, 'w', newline='') as csvfile:
+            writer = csv.DictWriter(csvfile, ["atlas_id", "genesis_id"])
             writer.writeheader()
             for row in self.id_map:
                 writer.writerow(row)
@@ -118,7 +119,7 @@ class Users():
                 return user
         return None
 
-    async def add_user(self, first_name, last_name, email, admin=False):
+    async def save_object(self, atlas_id, first_name, last_name, email, admin):
         """
         Adds a user to Atlas. The POST request is URL encoded JSON
         """
@@ -127,7 +128,7 @@ class Users():
                 "Object": {
                     "Populate": False,
                     "Type": "Teacher",
-                    "ID": "",
+                    "ID": atlas_id,
                     "WebPass": "",
                     "HasCustomizedMyAtlas": "",
                     "EmailAlert": "1",
@@ -147,7 +148,7 @@ class Users():
                     "Email": email,
                     "TeacherIsCoreTeam": "",
                     "TeacherWidgetConfigurationGroupID": "",
-                    "TeacherIsAdmin": "1" if admin else "",
+                    "TeacherIsAdmin": admin if admin else "",
                     "WillSendWelcomeEmail": "",
                     "SchoolMessaging": "",
                     "SendInvitationEmail": ""
@@ -162,5 +163,61 @@ class Users():
         response_json = await resp.json(content_type=None)
         message = response_json['Save']
         if 'ID' not in message:
-            logging.error("Unable to add {} {} {}: {}".format(first_name,
-                last_name, email, message))
+            logging.error("Unable to save_object {} {} {} {}: {}".format(first_name,
+                last_name, email, genesis_id, message))
+            return None
+        return message['ID']
+
+    def atlas_to_genesis(self, atlas_id):
+        """
+        Converts an Atlas ID to a Genesis ID using the id_map
+        """
+        for pair in self.id_map:
+            if pair['atlas_id'] == atlas_id:
+                return pair['genesis_id']
+        return None
+
+    def genesis_to_atlas(self, genesis_id):
+        """
+        Converts a Genesis ID to an Atlas ID using the id_map
+        """
+        for pair in self.id_map:
+            if pair['genesis_id'] == genesis_id:
+                return pair['atlas_id']
+        return None
+
+    async def add_update(self, genesis_id, first_name, last_name, email,
+        admin=False):
+        """
+        Adds or updates a user handling the id_map. If the genesis id is in the
+        id_map it is considered an update, otherwise it is an add
+        """
+        atlas_id = self.genesis_to_atlas(genesis_id)
+        if atlas_id == None:
+            atlas_id = await self.save_object("", first_name, last_name, email, admin)
+            id_map.append({'atlas_id': atlas_id, 'genesis_id': genesis_id})
+        else:
+            await self.save_object(atlas_id, first_name, last_name, email, admin)
+
+    async def delete_object(self, atlas_id):
+        """
+        Deletes a user from Atlas. The POST request is URL encoded JSON
+        """
+        json_data = {
+            "Delete": {
+                "Object": {
+                    "Populate": False,
+                    "Type": "Teacher",
+                    "TeacherID": atlas_id,
+                },
+                "Method": "AsyncDelete",
+                "Parameters":{},
+            }
+        }
+        form_data = {'Actions': json.dumps(json_data)}
+        resp = await self.session.post(constants.BASE_URL +
+            'Atlas/Controller', data=form_data)
+        response_json = await resp.json(content_type=None)
+        message = response_json['Delete']
+        if message['Result'] != 'OK':
+            logging.error("Unable to delete_object {}: {}".format(atlas_id, message))

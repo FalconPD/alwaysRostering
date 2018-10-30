@@ -9,23 +9,25 @@ import sys
 
 class Session():
     """
-    A context manager to handle logging in, loading users, etc.
+    A context manager to handle logging in, loading users, loading the ID map,
+    saving the ID map etc.
     """
-
-    async def __aenter__(self):
+    async def __aenter__(self, map_file):
         """
-        Creates an aiohttp session, logs in, gets a list of users
+        Creates an aiohttp session, logs in, gets a list of users, loads the
+        map
         """
         self.session = aiohttp.ClientSession()
         await self.login()
-        self.Users = await Users.create(self)
+        self.Users = await Users.create(self, map_file)
         return self
 
     async def __aexit__(self, *exc):
         """
-        Closes aiohttp session
+        Closes aiohttp session, writes map
         """
         await self.session.close()
+        self.Users.save_map()
 
     async def login(self):
         """

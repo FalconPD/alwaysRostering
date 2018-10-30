@@ -10,7 +10,7 @@ import re
 grade_levels       = ['KH', 'KF', '01', '02', '03', '04', '05', '06', '07',
                       '08', '09', '10', '11', '12']
 school_codes       = ['AES', 'BBS', 'BES', 'MLS', 'MTHS', 'MTMS', 'OTS', 'WES']
-teacher_job_codes  = ['1001', '1003', '1004', '1007', '1015', '1017', '1018',
+teacher_job_codes  = ['1000', '1001', '1003', '1004', '1007', '1015', '1017', '1018',
                       '1102', '1103', '1104', '1106', '1150', '1200', '1273',
                       '1283', '1301', '1308', '1315', '1317', '1331', '1345',
                       '1401', '1485', '1500', '1510', '1530', '1540', '1550',
@@ -22,6 +22,20 @@ admin_job_codes    = ['0102', '0122', '0201', '0202', '0221', '0222', '0231',
                       '0232', '0306', '0310', '0312', '0314', '0315', '0319',
                       '0321', '0322', '0324', '0399', '0524', '2410']
 sysadmin_job_codes = ['9200']
+
+edservices_job_codes = [
+    '0004', # OT (Purchased)
+    '3101', # Counselor
+    '3105', # Media Specialist
+    '3111', # OT
+    '3112', # PT
+    '3116', # Psychologist
+    '3117', # Social Worker
+    '3118', # LDTC
+    '3119', # Reading Specialist
+    '3120', # Speech 
+    '3121', # Coordinator Substance Abuse 
+]
 
 db_session = None
 
@@ -111,6 +125,14 @@ def sysadmins():
 
     return (
         staff_by_job_codes(sysadmin_job_codes).union(extra_query)
+    )
+
+def edservices():
+    """
+    Returns a query of Educational Services staff.
+    """
+    return (
+        staff_by_job_codes(edservices_job_codes)
     )
 
 def schools():
