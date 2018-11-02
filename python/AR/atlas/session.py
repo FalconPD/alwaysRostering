@@ -27,7 +27,7 @@ class Session():
         Closes aiohttp session, writes map
         """
         await self.session.close()
-        self.Users.save_map()
+        self.Users.id_map.save()
 
     async def login(self):
         """

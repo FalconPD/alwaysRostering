@@ -8,40 +8,84 @@ sys.path.append('..')
 import AR.AR as AR
 import AR.atlas as atlas
 from AR.tables import DistrictTeacher
+from AR.atlas.user import User
 
 async def sync_users():
     """
-    Goes through all users in Genesis
+    Makes sure Genesis users and Atlas users are in sync    
     """
-#    teacher = AR.staff().filter(DistrictTeacher.teacher_id=='099').one()
-#    await Atlas.Users.add_update(teacher.teacher_id, teacher.first_name, teacher.last_name,
-#        teacher.email, admin=True)
-    atlas_users = set()
-    teachers = set()
-    for user in Atlas.Users.users:
-        genesis_id = Atlas.Users.atlas_to_genesis(user['atlas_id'])
-        if genesis_id == None:
-            print(user)
-        else:
-            atlas_users.add(genesis_id)
-    for teacher in AR.teachers().union(AR.admins()).union(AR.edservices()).union(AR.sysadmins()):
-        teachers.add(teacher.teacher_id)
-    print(atlas_users - teachers)
-    await Atlas.Users.delete_object('719')
-    
+    current_users = {}
 
-def create_map(verbose):
+    # Create a dict of everyone who should be in Atlas and their attributes.
+    # Add users that aren't in there yet.
+    tasks = []
+    for teacher in (
+        AR.teachers()
+        .union(AR.admins())
+        .union(AR.edservices())
+        .union(AR.curradmins())
+        .union(AR.sysadmins())
+    ):
+        atlas_id = Atlas.Users.id_map.get_atlas(teacher.teacher_id)
+        user = User(atlas_id, teacher.teacher_first_name,
+            teacher.teacher_last_name, teacher.email, [], [])
+        if atlas_id == '': # If the user doesn't exist yet, create them
+            print("Adding: {} {} (Genesis ID {})".format(
+                teacher.teacher_first_name, teacher.teacher_last_name,
+                teacher.teacher_id))
+            tasks.append(Atlas.Users.update(user, teacher.teacher_id))
+        else:
+            current_users[atlas_id] = user
+
+    # We need the atlas_id to continue so we have to wait for the created users
+    # and add them to our current_users
+    for atlas_id in await asyncio.gather(*tasks):
+        current_users[atlas_id] = Atlas.Users.users[atlas_id]
+
+    # Set attributes and privileges
+    for teacher in AR.sysadmins():
+        atlas_id = Atlas.Users.id_map.get_atlas(teacher.teacher_id)
+        user = current_users[atlas_id]
+        user.attributes.append('System Admin')
+    for teacher in AR.curradmins():
+        atlas_id = Atlas.Users.id_map.get_atlas(teacher.teacher_id)
+        user = current_users[atlas_id]
+        user.privileges.append('All-level editing privileges')
+        
+    # Check for differences between current_users and what's in Atlas
+    tasks = []
+    for atlas_id, atlas_user in Atlas.Users.users.items():
+        # Delete users in Atlas but not in our list
+        if atlas_id not in current_users:
+            print("Deleting: {} {} (Atlas ID {})".format(atlas_user.first_name,
+                atlas_user.last_name, atlas_user.atlas_id))
+            tasks.append(Atlas.Users.delete(atlas_user))
+            continue
+
+        # Update users that are different
+        genesis_id = Atlas.Users.id_map.get_genesis(atlas_id)
+        user = current_users[atlas_id]
+        if not user.equal(atlas_user):
+            print("Updating: {} {} {} (Atlas ID {})".format(user.first_name,
+                user.last_name, user.email, user.atlas_id))
+            tasks.append(Atlas.Users.update(user, genesis_id))
+            if len(tasks) > 10: # testing, ten at a time
+                break;
+            continue
+
+    await asyncio.gather(*tasks)
+
+    return
+        
+def create_map():
     """
     Perform a CASE INSENSITIVE search based on first_name and last_name for all
     users in Atlas to see if they are in Genesis. Creates a NEW id_map based on
     this information.
     """
-    id_map = []
-
-    for user in Atlas.Users.users:
-        first = user['first_name']
-        last = user['last_name']
-        atlas_id = user['atlas_id']
+    for atlas_id, user in Atlas.Users.users.items():
+        first = user.first_name
+        last = user.last_name
         teacher = (AR.staff()
             .filter(func.upper(DistrictTeacher.teacher_first_name) == first.upper())
             .filter(func.upper(DistrictTeacher.teacher_last_name) == last.upper())
@@ -50,12 +94,10 @@ def create_map(verbose):
         if teacher == None:
             print("NOT FOUND {} {}".format(first, last))
         else:
-            if (verbose):
-                print("Atlas: {} {} {} -> Genesis: {} {} {}".format(atlas_id, first, last,
-                    teacher.teacher_id, teacher.teacher_first_name,
-                    teacher.teacher_last_name))
-            id_map.append({'atlas_id': atlas_id, 'genesis_id': teacher.teacher_id})
-            Atlas.Users.id_map = id_map
+            logging.debug("Atlas: {} {} {} -> Genesis: {} {} {}".format(
+                atlas_id, first, last, teacher.teacher_id,
+                teacher.teacher_first_name, teacher.teacher_last_name))
+            Atlas.Users.id_map.add(teacher.teacher_id, atlas_id)
 
 @click.group(chain=True)
 @click.option("--debug", is_flag=True, help="Print debugging statements")
@@ -71,10 +113,11 @@ def cli(db_file, map_file, debug):
     global Atlas
 
     # Setup debugging
+    FORMAT = "[%(levelname)s %(filename)s:%(lineno)s - %(funcName)s()] %(message)s"
     if debug:
-        logging.basicConfig(level=logging.DEBUG)
+        logging.basicConfig(level=logging.DEBUG, format=FORMAT)
     else:
-        logging.basicConfig(level=logging.WARNING)
+        logging.basicConfig(level=logging.WARNING, format=FORMAT)
 
     # Setup a new event loop
     loop = asyncio.get_event_loop()
@@ -86,12 +129,11 @@ def cli(db_file, map_file, debug):
     Atlas = loop.run_until_complete(atlas.Session().__aenter__(map_file))
         
 @cli.command(name="create_map")
-@click.option("--verbose", is_flag=True, help="Print all matches") 
-def cli_create_map(verbose):
+def cli_create_map():
     """
     create id map based on first and last names 
     """
-    create_map(verbose)
+    create_map()
 
 @cli.command(name="sync_users")
 def cli_sync_users():

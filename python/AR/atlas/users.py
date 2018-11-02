@@ -5,14 +5,17 @@ from bs4 import BeautifulSoup
 import re
 from AR.atlas import constants
 import asyncio
-import pprint
-
-pp = pprint.PrettyPrinter(indent=4)
+from AR.atlas.id_map import ID_Map
+from AR.atlas.user import User
 
 class Users():
     """
     Handles users operations
     """
+    users = {}
+    session = None
+    id_map = None
+
     @classmethod
     async def create(cls, session, map_file):
         """
@@ -21,61 +24,30 @@ class Users():
         """
         self = cls()
         self.session = session
-        self.users = await self.load()
-        self.map_file = map_file
-        self.id_map = self.load_map()
+        await self.load()
+        self.id_map = ID_Map(map_file)
         return self
 
     async def parse_page(self, url):
         """
-        GETs and parses a users page, returnling a list of user dicts
+        GETs and parses a users page, returning a list of User instances
         """
-        users = []
-
         resp = await self.session.get(url)
         soup = BeautifulSoup(await resp.text(), 'html.parser')
         rows = soup('tr', {'class': 'Teacher'})
         for row in rows[1:]: # Skip the first row
-            user = {}
-            user['atlas_id'] = re.search('Teacher_row_(.*)', row['id']).group(1)
+            atlas_id = re.search('Teacher_row_(.*)', row['id']).group(1)
             td = list(row('td'))
             name = td[0].string.split(', ')
-            user['last_name'] = name[0]
-            user['first_name'] = name[1]
+            last_name = name[0]
+            first_name = name[1]
             emails = list(td[1].stripped_strings)
-            user['email'] = emails[0]
-            user['attributes'] = []
-            for attribute in td[2].stripped_strings:
-                user['attributes'].append(attribute)
-            user['priveleges'] = []
-            for priveleges in td[3].stripped_strings:
-                user['priveleges'].append(priveleges)
-            users.append(user)
-        return users
-
-    def load_map(self):
-        """
-        Atlas does not have a place to store our IDs, so we have to keep a
-        separate map of them. We use a CSV file to make it easy to edit. This
-        function loads the CSV
-        """
-        id_map = []
-        with open(self.map_file, newline='') as csvfile:
-            reader  = csv.DictReader(csvfile)
-            for row in reader:
-                id_map.append(row)
-        return id_map
-
-    def save_map(self):
-        """
-        Write the ID map to a CSV file
-        """
-        with open(self.map_file, 'w', newline='') as csvfile:
-            writer = csv.DictWriter(csvfile, ["atlas_id", "genesis_id"])
-            writer.writeheader()
-            for row in self.id_map:
-                writer.writerow(row)
-            
+            email = emails[0] # for now we only deal with the first email
+            attributes = [ i for i in td[2].stripped_strings ]
+            privileges = [ i for i in td[3].stripped_strings ]
+            self.users[atlas_id] = User(atlas_id, first_name, last_name, email,
+                attributes, privileges)
+       
     async def load(self):
         """
         Loads / parses the users pages on Atlas to create a users list
@@ -94,123 +66,17 @@ class Users():
         for page in range(1, max_pages + 1):
             tasks.append(self.parse_page(constants.BASE_URL + 
                 'Atlas/Admin/View/Teachers?Page={}'.format(page)))
+        await asyncio.gather(*tasks)
 
-        # Gather the results and setup our users list
-        users = []
-        for chunk in await asyncio.gather(*tasks):
-            users += chunk
-        return users
-
-    def find_by_email(self, email):
+    async def action(self, action, method, atlas_object):
         """
-        Case insensitive email search that returns first match
-        """
-        for user in self.users:
-            if user['email'].lower() == email.lower():
-                return user
-        return None
-
-    def find_by_name(self, first_name, last_name):
-        """
-        Case insensitive first and last name search that returns first match
-        """
-        for user in self.users:
-            if user['last_name'].lower() == last_name.lower() and user['first_name'].lower() == first_name.lower():
-                return user
-        return None
-
-    async def save_object(self, atlas_id, first_name, last_name, email, admin):
-        """
-        Adds a user to Atlas. The POST request is URL encoded JSON
+        Performs an Atlas controller action with the given object. Actions are
+        form style POST requests with URL encoded JSON. Returns the response.
         """
         json_data = {
-            "Save": {
-                "Object": {
-                    "Populate": False,
-                    "Type": "Teacher",
-                    "ID": atlas_id,
-                    "WebPass": "",
-                    "HasCustomizedMyAtlas": "",
-                    "EmailAlert": "1",
-                    "ExemplarTeachNoCourseCertified": "",
-                    "ExemplarUnitSubmitted": "",
-                    "NumberOfExemplarVisits": "",
-                    "PasswordEncrypted": "",
-                    "PasswordRequested": "",
-                    "LastExemplarVisited": "",
-                    "HarvestEmailSent": "",
-                    "LastSiteNoticeID": "",
-                    "AcceptedExemplarAgreement": "",
-                    "PropertiesXML": "",
-                    "ReceivedAtlasUpdate": "",
-                    "TeacherLast": last_name,
-                    "TeacherFirst": first_name,
-                    "Email": email,
-                    "TeacherIsCoreTeam": "",
-                    "TeacherWidgetConfigurationGroupID": "",
-                    "TeacherIsAdmin": admin if admin else "",
-                    "WillSendWelcomeEmail": "",
-                    "SchoolMessaging": "",
-                    "SendInvitationEmail": ""
-                },
-                "Method": "AsyncSave",
-                "Parameters":{}
-            }
-        }
-        form_data = {'Actions': json.dumps(json_data)}
-        resp = await self.session.post(constants.BASE_URL +
-            'Atlas/Controller', data=form_data)
-        response_json = await resp.json(content_type=None)
-        message = response_json['Save']
-        if 'ID' not in message:
-            logging.error("Unable to save_object {} {} {} {}: {}".format(first_name,
-                last_name, email, genesis_id, message))
-            return None
-        return message['ID']
-
-    def atlas_to_genesis(self, atlas_id):
-        """
-        Converts an Atlas ID to a Genesis ID using the id_map
-        """
-        for pair in self.id_map:
-            if pair['atlas_id'] == atlas_id:
-                return pair['genesis_id']
-        return None
-
-    def genesis_to_atlas(self, genesis_id):
-        """
-        Converts a Genesis ID to an Atlas ID using the id_map
-        """
-        for pair in self.id_map:
-            if pair['genesis_id'] == genesis_id:
-                return pair['atlas_id']
-        return None
-
-    async def add_update(self, genesis_id, first_name, last_name, email,
-        admin=False):
-        """
-        Adds or updates a user handling the id_map. If the genesis id is in the
-        id_map it is considered an update, otherwise it is an add
-        """
-        atlas_id = self.genesis_to_atlas(genesis_id)
-        if atlas_id == None:
-            atlas_id = await self.save_object("", first_name, last_name, email, admin)
-            id_map.append({'atlas_id': atlas_id, 'genesis_id': genesis_id})
-        else:
-            await self.save_object(atlas_id, first_name, last_name, email, admin)
-
-    async def delete_object(self, atlas_id):
-        """
-        Deletes a user from Atlas. The POST request is URL encoded JSON
-        """
-        json_data = {
-            "Delete": {
-                "Object": {
-                    "Populate": False,
-                    "Type": "Teacher",
-                    "TeacherID": atlas_id,
-                },
-                "Method": "AsyncDelete",
+            action: {
+                "Object": atlas_object,
+                "Method": method,
                 "Parameters":{},
             }
         }
@@ -218,6 +84,66 @@ class Users():
         resp = await self.session.post(constants.BASE_URL +
             'Atlas/Controller', data=form_data)
         response_json = await resp.json(content_type=None)
+        logging.debug("Action Response: {}".format(response_json))
+        return response_json
+
+    async def save(self, user):
+        """
+        Save a User object in Atlas. The POST request is URL encoded JSON.
+        Returns the Atlas ID of the object.
+        """
+        response_json = await self.action("Save", "AsyncSave",
+            user.save_object())
+        message = response_json['Save']
+        if 'ID' not in message:
+            logging.error("Unable to save user: {}".format(user))
+            return None
+        if message['ID'] == 'Invalid Email Address':
+            logging.error("Unable to save user: Invalid Email Address")
+            return None 
+        return str(message['ID'])
+
+    async def delete(self, user):
+        """
+        Deletes a user from Atlas, the id_map, and the users dict
+        """
+        response_json = await self.action("Delete", "AsyncDelete",
+            user.delete_object())
         message = response_json['Delete']
-        if message['Result'] != 'OK':
-            logging.error("Unable to delete_object {}: {}".format(atlas_id, message))
+        if 'Result' not in message:
+            logging.error("Unable to delete user (no result)".format(user))
+            return
+        else:
+            if message['Result'] != 'OK':
+                logging.error("Unable to delete user".format(user))
+            return
+        atlas_id = user.atlas_id
+        self.id_map.del_by_atlas(atlas_id)
+        del(self.users[atlas_id])
+
+    async def update_privilege(self, user):
+        """
+        Updates a user's privileges in Atlas.
+        """
+        response_json = await self.action("Save", "AsyncSave",
+            user.privilege_object())
+        message = response_json['Save']
+        if 'ID' not in message:
+            logging.error("Unable to update privileges for user {}".format(user))
+            return None
+        return message['ID']
+
+    async def update(self, user, genesis_id):
+        """
+        Updates / creates a user object on Atlas, changes the id_map as
+        necessary, updates the users dict, and sets the pivileges if
+        necessary. Returns the atlas_id
+        """
+        atlas_id = await self.save(user)
+        if user.atlas_id == '':
+            user.atlas_id = atlas_id
+            self.users[atlas_id] = user
+            self.id_map.add(genesis_id, atlas_id)
+        if len(user.privileges) != 0:
+            await self.update_privilege(user)
+        return atlas_id

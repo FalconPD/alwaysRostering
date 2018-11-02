@@ -8,4 +8,12 @@ This script uses the AR Genesis module to create a database of the information c
 
 ## sync_schoology.py
 
-This script automatically syncs buildings, users, courses, and enrollments with [Schoology](https://monroetownship.schoology.com). 
+This script automatically syncs buildings, users, courses, and enrollments with [Schoology](https://monroetownship.schoology.com).
+
+## Atlas
+
+This directory contains scripts for working with the Atlas curriculum management system.
+
+## MAP
+
+This directory contains scripts and rosters for working with NWEA MAP

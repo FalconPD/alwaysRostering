@@ -10,19 +10,92 @@ import re
 grade_levels       = ['KH', 'KF', '01', '02', '03', '04', '05', '06', '07',
                       '08', '09', '10', '11', '12']
 school_codes       = ['AES', 'BBS', 'BES', 'MLS', 'MTHS', 'MTMS', 'OTS', 'WES']
-teacher_job_codes  = ['1000', '1001', '1003', '1004', '1007', '1015', '1017', '1018',
-                      '1102', '1103', '1104', '1106', '1150', '1200', '1273',
-                      '1283', '1301', '1308', '1315', '1317', '1331', '1345',
-                      '1401', '1485', '1500', '1510', '1530', '1540', '1550',
-                      '1607', '1630', '1700', '1706', '1760', '1805', '1812',
-                      '1821', '1856', '1897', '1901', '1962', '2100', '2110',
-                      '2130', '2202', '2206', '2231', '2235', '2236', '2302',
-                      '2322', '2400', '2401', '2405', '2406', '3135']
-admin_job_codes    = ['0102', '0122', '0201', '0202', '0221', '0222', '0231',
-                      '0232', '0306', '0310', '0312', '0314', '0315', '0319',
-                      '0321', '0322', '0324', '0399', '0524', '2410']
+teacher_job_codes = [
+    '1000', # Preschool
+    '1001', # Elementary - 8th Grade
+    '1003', # Kindergarten
+    '1004', # Elementary School Teacher K-5
+    '1007',
+    '1015',
+    '1017',
+    '1018',
+    '1102',
+    '1103',
+    '1104',
+    '1106',
+    '1150',
+    '1200',
+    '1273',
+    '1283',
+    '1301',
+    '1308',
+    '1315',
+    '1317',
+    '1331',
+    '1345',
+    '1401',
+    '1485',
+    '1500',
+    '1510',
+    '1530',
+    '1540',
+    '1550',
+    '1607',
+    '1630',
+    '1700',
+    '1706',
+    '1760',
+    '1805',
+    '1812',
+    '1821',
+    '1856',
+    '1897',
+    '1901',
+    '1962',
+    '2100',
+    '2110',
+    '2130',
+    '2202',
+    '2206',
+    '2231',
+    '2235',
+    '2236',
+    '2302',
+    '2322',
+    '2400',
+    '2401',
+    '2405',
+    '2406',
+    '2645', # Television Production
+    '3135', # Structured Learning Experience Coordinator
+]
+principal_job_codes = [
+    '0201', # HS Principal
+    '0202', # Assistant HS Principal
+    '0221', # MS Principal
+    '0222', # Assistant MS Principal
+    '0231', # Elementary Principal
+    '0232', # Assistant Elementary Principal
+]
+supervisor_job_codes = [
+    '0306', # Supervisor PPS
+    '0310', # Supervisor Athletics
+    '0312', # Supervisor Art
+    '0314', # Supervisor English
+    '0315', # Supervisor Foreign Languages
+    '0319', # Supervisor Mathematics
+    '0321', # Supervisor Music
+    '0322', # Supervisor Science
+    '0324', # Supervisor Special Education
+    '0399', # Supervisor Special Project
+]
+other_admin_job_codes = [
+    '0102', # Superintendent
+    '0122', # Assistant Superintendent
+    '0524', # Director Special Education
+    '2410', # Teacher Coach
+]
 sysadmin_job_codes = ['9200']
-
 edservices_job_codes = [
     '0004', # OT (Purchased)
     '3101', # Counselor
@@ -35,6 +108,7 @@ edservices_job_codes = [
     '3119', # Reading Specialist
     '3120', # Speech 
     '3121', # Coordinator Substance Abuse 
+    '3125', # Teacher / Behavior Specialist (SE only)
 ]
 
 db_session = None
@@ -108,9 +182,13 @@ def teachers():
 
 def admins():
     """
-    Returns a query of administrators
+    Returns a query of ALL administrators
     """
-    return staff_by_job_codes(admin_job_codes)
+    return staff_by_job_codes(
+        principal_job_codes +
+        supervisor_job_codes +
+        other_admin_job_codes
+    )
 
 def sysadmins():
     """
@@ -125,6 +203,24 @@ def sysadmins():
 
     return (
         staff_by_job_codes(sysadmin_job_codes).union(extra_query)
+    )
+
+def curradmins():
+    """
+    Returns a query of people who can edit ALL curriculum:
+    * Ed Tech facilitator
+    * Assistant Superintedent
+    * Curriculum Secretary
+    * Supervisors
+    """
+    extra_ids = ['099', '7199']
+    extra_query = (
+        db_session.query(DistrictTeacher)
+        .filter(DistrictTeacher.teacher_id.in_(extra_ids))
+    )
+
+    return (
+        staff_by_job_codes(supervisor_job_codes + ['0122']).union(extra_query)
     )
 
 def edservices():
@@ -166,4 +262,14 @@ def sections():
         .join(CourseSection)
         .filter(CourseSection.assigned_seats > 0)
         .with_entities(CourseSection)
+    )
+
+def teacher_by_id(teacher_id):
+    """
+    Returns a DistrictTeacher object that matches a given teacher_id
+    """
+    return (
+        db_session.query(DistrictTeacher)
+        .filter(DistrictTeacher.teacher_id==teacher_id)
+        .one()
     )

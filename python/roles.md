@@ -1,6 +1,6 @@
 # Roles
 
-alwaysRostering has methods can create queries for various roles commonly used in subscription services.  These queries are for active staff or students. Staff roles are: Staff, Teacher, Admin, Sysadmin, or Student.
+alwaysRostering has methods can create queries for various roles commonly used in subscription services.  These queries are for active staff or students. Staff roles are: Staff, Teacher, Admin, Sysadmin, Curriculum Amdin, or Student.
 
 ## Staff: staff() (filtered by job code)
 
@@ -91,6 +91,22 @@ All active staff that currently have a State ID. This filters out shared teacher
 
 * 9200: Technicians
 * Director of Information Technology
+* Educational Technology Facilitator
+
+## Curriculum Admin: curradmins() (filtered by job code and manually added)
+
+* 0122: Assistant Superintendent
+* 0306: Supervisor PPS
+* 0310: Supervisor Athletics
+* 0312: Supervisor Art
+* 0314: Supervisor English
+* 0315: Supervisor Foreign Languages
+* 0319: Supervisor Mathematics
+* 0321: Supervisor Music
+* 0322: Supervisor Science
+* 0324: Supervisor Special Education
+* 0399: Supervisor Special Project
+* Curriculum Secretary
 * Educational Technology Facilitator
 
 ## Students: students()

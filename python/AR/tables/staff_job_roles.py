@@ -104,5 +104,13 @@ class StaffJobRole(Base):
         )
 
     def __repr__(self):
-        return '{} {} {}'.format(self.role_seq, self.job_code,
-            self.school_code_assigned) 
+        return (
+            "StaffJobRole "
+            "role_seq={} "
+            "job_code={} "
+            "school_code_assigned={}"
+            ).format(
+                self.role_seq,
+                self.job_code,
+                self.school_code_assigned
+            ) 
