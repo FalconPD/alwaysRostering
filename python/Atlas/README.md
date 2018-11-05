@@ -1,4 +1,6 @@
-#sync_atlas.py
+# sync_atlas.py
+
+## Overview
 
 This script provides a command line interface to keep Atlas in sync with the
 information in Genesis. It uses a CSV map_file to keep track of how Atlas IDs
@@ -7,6 +9,7 @@ For all actions performed by this script the id_map should be maintained
 automatically. It can be recreated (to the best of its ability) by using the
 create_map command.
 
+## Usage
 ```
 Usage: sync_atlas.py [OPTIONS] DB_FILE MAP_FILE COMMAND1 [ARGS]... [COMMAND2
                      [ARGS]...]...

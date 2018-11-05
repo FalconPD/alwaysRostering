@@ -26,49 +26,49 @@ async def sync_users():
         .union(AR.curradmins())
         .union(AR.sysadmins())
     ):
-        atlas_id = Atlas.Users.id_map.get_atlas(teacher.teacher_id)
+        atlas_id = Atlas.id_map.get_atlas(teacher.teacher_id)
         user = User(atlas_id, teacher.teacher_first_name,
             teacher.teacher_last_name, teacher.email, [], [])
         if atlas_id == '': # If the user doesn't exist yet, create them
             print("Adding: {} {} (Genesis ID {})".format(
                 teacher.teacher_first_name, teacher.teacher_last_name,
                 teacher.teacher_id))
-            tasks.append(Atlas.Users.update(user, teacher.teacher_id))
+            tasks.append(Atlas.update_user(user, teacher.teacher_id))
         else:
             current_users[atlas_id] = user
 
     # We need the atlas_id to continue so we have to wait for the created users
     # and add them to our current_users
     for atlas_id in await asyncio.gather(*tasks):
-        current_users[atlas_id] = Atlas.Users.users[atlas_id]
+        current_users[atlas_id] = Atlas.users[atlas_id]
 
     # Set attributes and privileges
     for teacher in AR.sysadmins():
-        atlas_id = Atlas.Users.id_map.get_atlas(teacher.teacher_id)
+        atlas_id = Atlas.id_map.get_atlas(teacher.teacher_id)
         user = current_users[atlas_id]
         user.attributes.append('System Admin')
     for teacher in AR.curradmins():
-        atlas_id = Atlas.Users.id_map.get_atlas(teacher.teacher_id)
+        atlas_id = Atlas.id_map.get_atlas(teacher.teacher_id)
         user = current_users[atlas_id]
         user.privileges.append('All-level editing privileges')
         
     # Check for differences between current_users and what's in Atlas
     tasks = []
-    for atlas_id, atlas_user in Atlas.Users.users.items():
+    for atlas_id, atlas_user in Atlas.users.items():
         # Delete users in Atlas but not in our list
         if atlas_id not in current_users:
             print("Deleting: {} {} (Atlas ID {})".format(atlas_user.first_name,
                 atlas_user.last_name, atlas_user.atlas_id))
-            tasks.append(Atlas.Users.delete(atlas_user))
+            tasks.append(Atlas.delete_user(atlas_user))
             continue
 
         # Update users that are different
-        genesis_id = Atlas.Users.id_map.get_genesis(atlas_id)
+        genesis_id = Atlas.id_map.get_genesis(atlas_id)
         user = current_users[atlas_id]
         if not user.equal(atlas_user):
             print("Updating: {} {} {} (Atlas ID {})".format(user.first_name,
                 user.last_name, user.email, user.atlas_id))
-            tasks.append(Atlas.Users.update(user, genesis_id))
+            tasks.append(Atlas.update_user(user, genesis_id))
             if len(tasks) > 10: # testing, ten at a time
                 break;
             continue
@@ -83,7 +83,7 @@ def create_map():
     users in Atlas to see if they are in Genesis. Creates a NEW id_map based on
     this information.
     """
-    for atlas_id, user in Atlas.Users.users.items():
+    for atlas_id, user in Atlas.users.items():
         first = user.first_name
         last = user.last_name
         teacher = (AR.staff()
@@ -97,7 +97,7 @@ def create_map():
             logging.debug("Atlas: {} {} {} -> Genesis: {} {} {}".format(
                 atlas_id, first, last, teacher.teacher_id,
                 teacher.teacher_first_name, teacher.teacher_last_name))
-            Atlas.Users.id_map.add(teacher.teacher_id, atlas_id)
+            Atlas.id_map.add(teacher.teacher_id, atlas_id)
 
 @click.group(chain=True)
 @click.option("--debug", is_flag=True, help="Print debugging statements")

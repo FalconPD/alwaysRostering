@@ -34,6 +34,8 @@ class User():
         }
         if 'System Admin' in self.attributes:
             data['TeacherIsAdmin'] = '1'
+        if self.atlas_id == '':
+            data['SendInvitationEmail'] = '1'
         return data
 
     def privilege_object(self):

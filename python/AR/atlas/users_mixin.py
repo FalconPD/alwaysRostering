@@ -1,38 +1,21 @@
-import csv
-import json
-import logging
 from bs4 import BeautifulSoup
 import re
-from AR.atlas import constants
+import logging
 import asyncio
-from AR.atlas.id_map import ID_Map
+import json
+
+from AR.atlas import constants
 from AR.atlas.user import User
 
-class Users():
+class UsersMixin():
     """
-    Handles users operations
+    Mixin to provide users functions
     """
-    users = {}
-    session = None
-    id_map = None
-
-    @classmethod
-    async def create(cls, session, map_file):
-        """
-        Creates an object linked to a session
-        Need a factory function due to async
-        """
-        self = cls()
-        self.session = session
-        await self.load()
-        self.id_map = ID_Map(map_file)
-        return self
-
-    async def parse_page(self, url):
+    async def parse_user_page(self, url):
         """
         GETs and parses a users page, returning a list of User instances
         """
-        resp = await self.session.get(url)
+        resp = await self.get(url)
         soup = BeautifulSoup(await resp.text(), 'html.parser')
         rows = soup('tr', {'class': 'Teacher'})
         for row in rows[1:]: # Skip the first row
@@ -48,13 +31,12 @@ class Users():
             self.users[atlas_id] = User(atlas_id, first_name, last_name, email,
                 attributes, privileges)
        
-    async def load(self):
+    async def load_users(self):
         """
         Loads / parses the users pages on Atlas to create a users list
         """
         # see how many pages there are
-        resp = await self.session.get(constants.BASE_URL +
-            'Atlas/Admin/View/Teachers')
+        resp = await self.get(constants.BASE_URL + 'Atlas/Admin/View/Teachers')
         soup = BeautifulSoup(await resp.text(), 'html.parser')
         span = soup.find('span', {'class': 'UIPagingShowing'})
         max_pages = int(re.search('\(Page 1 of (\d+), Records.*',
@@ -64,7 +46,7 @@ class Users():
         logging.debug("Loading {} pages of users".format(max_pages))
         tasks = []
         for page in range(1, max_pages + 1):
-            tasks.append(self.parse_page(constants.BASE_URL + 
+            tasks.append(self.parse_user_page(constants.BASE_URL + 
                 'Atlas/Admin/View/Teachers?Page={}'.format(page)))
         await asyncio.gather(*tasks)
 
@@ -87,7 +69,7 @@ class Users():
         logging.debug("Action Response: {}".format(response_json))
         return response_json
 
-    async def save(self, user):
+    async def save_user(self, user):
         """
         Save a User object in Atlas. The POST request is URL encoded JSON.
         Returns the Atlas ID of the object.
@@ -103,7 +85,7 @@ class Users():
             return None 
         return str(message['ID'])
 
-    async def delete(self, user):
+    async def delete_user(self, user):
         """
         Deletes a user from Atlas, the id_map, and the users dict
         """
@@ -133,13 +115,13 @@ class Users():
             return None
         return message['ID']
 
-    async def update(self, user, genesis_id):
+    async def update_user(self, user, genesis_id):
         """
         Updates / creates a user object on Atlas, changes the id_map as
         necessary, updates the users dict, and sets the pivileges if
         necessary. Returns the atlas_id
         """
-        atlas_id = await self.save(user)
+        atlas_id = await self.save_user(user)
         if user.atlas_id == '':
             user.atlas_id = atlas_id
             self.users[atlas_id] = user
