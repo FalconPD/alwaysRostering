@@ -7,7 +7,7 @@ name = "pypi"
 sqlalchemy = "*"
 aiohttp = "*"
 click = "*"
-requests = "*"
 "beautifulsoup4" = "*"
+selenium = "*"
 
 [dev-packages]
