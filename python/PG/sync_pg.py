@@ -36,9 +36,11 @@ def cli(db_file, debug):
     loop = asyncio.get_event_loop()
 
     # Load the Genesis database
+    print("Loading Genesis database...")
     AR.init(db_file)
 
     # Create a new PG session (designed for an async with)
+    print("Logging in to Professional Growth and getting users...")
     PG = loop.run_until_complete(professional_growth.Session().__aenter__())
         
 @cli.command(name="sync_users")

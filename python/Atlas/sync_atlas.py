@@ -69,7 +69,7 @@ async def sync_users():
             print("Updating: {} {} {} (Atlas ID {})".format(user.first_name,
                 user.last_name, user.email, user.atlas_id))
             tasks.append(Atlas.update_user(user, genesis_id))
-            if len(tasks) > 10: # testing, ten at a time
+            if len(tasks) > 100: # testing, one hundred at a time
                 break;
             continue
 
