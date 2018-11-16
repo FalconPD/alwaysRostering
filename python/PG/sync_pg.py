@@ -12,15 +12,15 @@ async def sync_users():
     """
     Makes sure Genesis users and Professional Growth users are in sync    
     """
-    for teacher in AR.teachers():
-        print(teacher)
-        user = PG.find_user(teacher.teacher_first_name, teacher.teacher_last_name)
-        print(user)
+    await PG.save_user(PG.find_user("Ryan", "Tolboom"))
 
 @click.group(chain=True)
-@click.option("--debug", is_flag=True, help="Print debugging statements")
+@click.option("--debug", is_flag=True, help="Print debugging statements.")
+@click.option("--user_file", type=click.Path(readable=True, writable=True),
+    help="Load/Save the PG user database from/in this file. If it does not " +
+    "exist it will be created with the data currently on PG.")
 @click.argument('db_file', type=click.Path(exists=True), metavar='DB_FILE')
-def cli(db_file, debug):
+def cli(db_file, user_file, debug):
     """
     Command line interface for working with Frontline Professional Growth
 
@@ -44,8 +44,8 @@ def cli(db_file, debug):
     AR.init(db_file)
 
     # Create a new PG session (designed for an async with)
-    print("Logging into Professional Growth and getting users...")
-    PG = loop.run_until_complete(professional_growth.Session().__aenter__())
+    print("Logging into Professional Growth and loading users...")
+    PG = loop.run_until_complete(professional_growth.Session(user_file).__aenter__())
         
 @cli.command(name="sync_users")
 def cli_sync_users():

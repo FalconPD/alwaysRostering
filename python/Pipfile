@@ -9,5 +9,6 @@ aiohttp = "*"
 click = "*"
 "beautifulsoup4" = "*"
 selenium = "*"
+multidict = "*"
 
 [dev-packages]

@@ -4,10 +4,11 @@ import json
 from selenium.webdriver import Firefox
 from selenium.webdriver.firefox.options import Options
 
-from AR.atlas import constants
 from AR.util.token_bucket import TokenBucket
+from AR.PG import constants
 from AR.PG.http_mixin import HTTPMixin
 from AR.PG.users_mixin import UsersMixin
+from AR.PG.user import User
 
 class Session(HTTPMixin, UsersMixin):
     """
@@ -15,21 +16,36 @@ class Session(HTTPMixin, UsersMixin):
     """
     session = None # our aiohttp session
 
+    def __init__(self, user_file):
+        self.user_file = user_file
+
     async def __aenter__(self):
         """
-        Creates an aiohttp session, logs in
+        Logs in with selenium, creates and aiohttp session with the cookies
+        from selenium, loads users from a file or PG
         """
-        self.token_bucket = TokenBucket(100, 50)
+        self.token_bucket = TokenBucket(constants.MAX_TOKENS,
+            constants.TOKEN_RATE) 
         cookies = await self.login()
         self.session = aiohttp.ClientSession(cookies=cookies)
-        await self.load_users()
+        if self.user_file != None:
+            try:
+                self.users = []
+                for dict_user in json.load(open(self.user_file)):
+                    self.users.append(User(dict_=dict_user))                                    
+            except FileNotFoundError:
+                self.users = await self.load_users()
         return self
 
     async def __aexit__(self, *exc):
         """
-        Closes aiohttp session, writes map
+        Closes aiohttp session, writes PG users if requested
         """
         await self.session.close()
+        if self.user_file != None:
+            with open(self.user_file, 'w') as out:
+                dict_users = [ user.__dict__ for user in self.users ]
+                json.dump(dict_users, out, sort_keys=True, indent=4) 
 
     async def login(self):
         """
@@ -44,7 +60,7 @@ class Session(HTTPMixin, UsersMixin):
         assert opts.headless
         with Firefox(options=opts) as browser:
             # Some things take a while to settle (redirects, JS redirects, etc.)
-            browser.implicitly_wait(10)
+            browser.implicitly_wait(constants.SELENIUM_TIMEOUT)
 
             # Submit credentials on the login page
             browser.get('https://mylearningplan.com')

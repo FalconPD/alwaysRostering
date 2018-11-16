@@ -1,6 +1,8 @@
 from bs4 import BeautifulSoup
 from AR.PG.user import User
 import asyncio
+import pprint
+pp = pprint.PrettyPrinter(indent=4)
 
 class UsersMixin():
     """
@@ -11,12 +13,13 @@ class UsersMixin():
         Loads a user profile page, parses it and returns a user object
         """
         resp = await self.get(url)
-        user = User(await resp.text())
+        html = await resp.text()
+        user = User(html=html)
         return user
         
     async def load_users(self):
         """
-        Gets a list of all users on PG and stores it in the users variable
+        Gets a list of all users on PG and returns it
         """
         resp = await self.get('https://www.mylearningplan.com/DistrictAdmin/UserList.asp?V=ALL')
         soup = BeautifulSoup(await resp.text(), 'html.parser')
@@ -28,7 +31,7 @@ class UsersMixin():
         users = []
         for user in await asyncio.gather(*tasks):
             users.append(user)
-        self.users = users
+        return users
 
     def find_user(self, first, last):
         """
@@ -38,3 +41,11 @@ class UsersMixin():
             if first.upper() == user.first_name.upper() and last.upper() == user.last_name.upper():
                 return user
         return None
+
+    async def save_user(self, user):
+        """
+        Saves a user object on PG
+        """
+        resp = await self.post('https://www.mylearningplan.com/Forms.asp',
+            params=user.save_params())
+        print(await resp.text())

@@ -9,3 +9,4 @@ __pycache__/
 *.csv
 output.txt
 geckodriver.log
+python/PG/*.json
