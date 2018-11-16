@@ -12,7 +12,11 @@ async def sync_users():
     """
     Makes sure Genesis users and Professional Growth users are in sync    
     """
-        
+    for teacher in AR.teachers():
+        print(teacher)
+        user = PG.find_user(teacher.teacher_first_name, teacher.teacher_last_name)
+        print(user)
+
 @click.group(chain=True)
 @click.option("--debug", is_flag=True, help="Print debugging statements")
 @click.argument('db_file', type=click.Path(exists=True), metavar='DB_FILE')
@@ -40,7 +44,7 @@ def cli(db_file, debug):
     AR.init(db_file)
 
     # Create a new PG session (designed for an async with)
-    print("Logging in to Professional Growth and getting users...")
+    print("Logging into Professional Growth and getting users...")
     PG = loop.run_until_complete(professional_growth.Session().__aenter__())
         
 @cli.command(name="sync_users")

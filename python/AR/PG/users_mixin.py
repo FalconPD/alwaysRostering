@@ -29,3 +29,12 @@ class UsersMixin():
         for user in await asyncio.gather(*tasks):
             users.append(user)
         self.users = users
+
+    def find_user(self, first, last):
+        """
+        Performs a CASE INSENSITIVE search for a user based on first and last name
+        """
+        for user in self.users:
+            if first.upper() == user.first_name.upper() and last.upper() == user.last_name.upper():
+                return user
+        return None

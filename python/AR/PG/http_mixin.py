@@ -9,6 +9,7 @@ class HTTPMixin():
         """
         Perform an HTTP request and do some error checking
         """
+        await self.token_bucket.get() # throttle requests
         logging.debug(
             "HTTP {} {} json={} params={} data={} allow_redirects={}".format(
             method, url, json, params, data, allow_redirects)

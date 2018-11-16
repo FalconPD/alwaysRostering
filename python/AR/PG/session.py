@@ -5,6 +5,7 @@ from selenium.webdriver import Firefox
 from selenium.webdriver.firefox.options import Options
 
 from AR.atlas import constants
+from AR.util.token_bucket import TokenBucket
 from AR.PG.http_mixin import HTTPMixin
 from AR.PG.users_mixin import UsersMixin
 
@@ -18,6 +19,7 @@ class Session(HTTPMixin, UsersMixin):
         """
         Creates an aiohttp session, logs in
         """
+        self.token_bucket = TokenBucket(100, 50)
         cookies = await self.login()
         self.session = aiohttp.ClientSession(cookies=cookies)
         await self.load_users()

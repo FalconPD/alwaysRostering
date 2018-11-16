@@ -49,6 +49,7 @@ class User():
         self.dob = self._input_to_string(soup, 'DT_DATEOFBIRTH')
         self.job_title = self._input_to_string(soup, 'VAR_JOBTITLE')
         self.job_code = self._input_to_string(soup, 'VAR_POSITIONTYPE')
+        self.employee_num = self._input_to_string(soup, 'VAR_EMPLOYEEID')
         self.date_hired = self._input_to_string(soup, 'DT_DATEHIRED')
         self.date_terminated = self._input_to_string(soup, 'DT_DATETERMINATED')
         self.substitute = self._radio_to_bool(soup, 'BIT_ISSUBSTITUTE')
@@ -65,9 +66,28 @@ class User():
         self.groups = self._checkboxes_to_list(soup, 'INT_GROUPID')
         self.budget_codes = self._checkboxes_to_list(soup, 'INT_FUNDINGID')
 
+    def equals(self, user):
+        """
+        Checks to see if two users are the same. Right now we only check a
+        minimal set of attributes
+        """
+        logging.debug("Comparing:")
+        logging.debug(self)
+        logging.debug(user)
+        if self.first_name != user.first_name:
+            logging.debug("First names do not match.")
+            return False
+        if self.last_name != user.last_name:
+            logging.debug("Last names do not match.")
+            return False
+        if self.email != user.email:
+            logging.debug("Emails names do not match.")
+            return False
+        True
+
     def __repr__(self):
         return (
-            "User "
+            "PG User "
             "pg_id={} "
             "first_name={} "
             "last_name={} "

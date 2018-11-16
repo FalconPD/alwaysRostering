@@ -5,6 +5,7 @@ MAP/rosters/*
 Genesis/reports/*
 __pycache__/
 *.sqlite3
+*.sqlite3-journal
 *.csv
 output.txt
 geckodriver.log
