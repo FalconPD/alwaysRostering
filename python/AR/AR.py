@@ -15,10 +15,10 @@ teacher_job_codes = [
     '1001', # Elementary - 8th Grade
     '1003', # Kindergarten
     '1004', # Elementary School Teacher K-5
-    '1007',
-    '1015',
-    '1017',
-    '1018',
+    '1007', # Elementary Teacher in Secondary Setting
+    '1015', # English/Elementary
+    '1017', # Science/Elementary
+    '1018', # Social Studies/Elementary
     '1102',
     '1103',
     '1104',
@@ -95,7 +95,9 @@ other_admin_job_codes = [
     '0524', # Director Special Education
     '2410', # Teacher Coach
 ]
-sysadmin_job_codes = ['9200']
+sysadmin_job_codes = [
+    '9200' # Technicians
+]
 edservices_job_codes = [
     '0004', # OT (Purchased)
     '3101', # Counselor
@@ -109,6 +111,9 @@ edservices_job_codes = [
     '3120', # Speech 
     '3121', # Coordinator Substance Abuse 
     '3125', # Teacher / Behavior Specialist (SE only)
+]
+nurse_job_codes = [
+    '3114' # School Nurse
 ]
 
 db_session = None
@@ -231,6 +236,35 @@ def edservices():
         staff_by_job_codes(edservices_job_codes)
     )
 
+def nurses():
+    """
+    Returns a query of all the nurses.
+    """
+    return (
+        staff_by_job_codes(nurse_job_codes)
+    )
+
+def fieldtrip_admins():
+    """
+    Returns a query of ALL people involved in the field trip approval process
+    """
+    extra_ids = [
+        '5293', # AES
+        '5139', # BBS
+        '5211', # BES
+        '5360', # Buildings and Grounds
+        '269',  # Central Office
+        '8114', # MTHS
+        '5814', # MTMS
+        '5158', # MLS
+        '5156', # OTS
+        '5251', # PPS
+        '4950', # Transportation
+        '5296', # WES
+    ]
+    extra_query = staff().filter(DistrictTeacher.teacher_id.in_(extra_ids))
+    return staff_by_job_codes(nurse_job_codes).union(extra_query)
+
 def schools():
     """
     Returns a query of in-district schools
@@ -272,4 +306,16 @@ def teacher_by_id(teacher_id):
         db_session.query(DistrictTeacher)
         .filter(DistrictTeacher.teacher_id==teacher_id)
         .one()
+    )
+
+def teacher_by_name(first_name, last_name):
+    """
+    Returns the FIRST DistrictTeacher object that matches a given CASE
+    INSENSITIVE first and last name
+    """
+    return (
+        db_session.query(DistrictTeacher)
+        .filter(func.lower(DistrictTeacher.teacher_first_name)==first_name.lower())
+        .filter(func.lower(DistrictTeacher.teacher_last_name)==last_name.lower())
+        .first()
     )

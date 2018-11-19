@@ -1,8 +1,8 @@
 from bs4 import BeautifulSoup
 from AR.PG.user import User
 import asyncio
-import pprint
-pp = pprint.PrettyPrinter(indent=4)
+import logging
+import sys
 
 class UsersMixin():
     """
@@ -33,7 +33,7 @@ class UsersMixin():
             users.append(user)
         return users
 
-    def find_user(self, first, last):
+    def user_by_name(self, first, last):
         """
         Performs a CASE INSENSITIVE search for a user based on first and last name
         """
@@ -42,10 +42,31 @@ class UsersMixin():
                 return user
         return None
 
+    def user_by_payroll(self, payroll_id):
+        """
+        Performs search for a user based on their payroll ID
+        """
+        for user in self.users:
+            if user.payroll_id ==  payroll_id:
+                return user
+        return None
+
+    def user_by_id(self, pg_id):
+        """
+        Performs search for a user based on their PG id
+        """
+        for user in self.users:
+            if user.pg_id ==  pg_id:
+                return user
+        return None
+
     async def save_user(self, user):
         """
         Saves a user object on PG
         """
         resp = await self.post('https://www.mylearningplan.com/Forms.asp',
-            params=user.save_params())
-        print(await resp.text())
+            data=user.data())
+        soup = BeautifulSoup(await resp.text(), 'html.parser')
+        if list(soup.find('h1').strings)[0] != 'Confirmation':
+            logging.error("Error while saving user {}")
+            sys.exit(1)

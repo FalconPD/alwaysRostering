@@ -121,50 +121,50 @@ class User():
             return 'Yes'
         return 'No'
     
-    def save_params(self):
+    def data(self):
         """
-        Returns a params MultiDict (needed for lists) for the save operation
+        Returns a MultiDict (needed for lists) usbed by the save operation
         """
         dict_ = MultiDict()
+        dict_.add('RURL', '')    
+        dict_.add('M', 'E')
         dict_.add('AID', 0)
+        dict_.add('O', self.pg_id)
+        dict_.add('F', 10045) # the ID of the form we are submitting
+        dict_.add('I', self.pg_id)
+        dict_.add('VAR_FIRSTNAME', self.first_name)
+        dict_.add('VAR_LASTNAME', self.last_name)
+        dict_.add('VAR_EMAIL', self.email)
+        dict_.add('BIT_ISINSTRUCTOR', self._yes_no(self.instructor))
+        dict_.add('BIT_ISDISTRICTADMIN', self._yes_no(self.admin))
         dict_.add('BIT_ACTIVE', self._yes_no(self.active))
+        for key in self.catalogs.keys():
+            dict_.add('INT_PROGRAMADMINID', key)
+        dict_.add('BIT_ISINSTRUCTIONAL', self._yes_no(self.certificate_holder))
+        dict_.add('ENC_SID', self.ssn)
+        dict_.add('VAR_CERTIFICATEID', self.certificate_id)
+        dict_.add('DT_CERTIFICATEEXPIRATIONDATE', self.certificate_expiration)
+        dict_.add('DT_DATEOFBIRTH', self.dob)
+        dict_.add('VAR_JOBTITLE', self.job_title)
+        dict_.add('VAR_POSITIONTYPE', self.job_code)
+        dict_.add('VAR_EMPLOYEEID', self.payroll_id)
+        dict_.add('DT_DATEHIRED', self.date_hired)
+        dict_.add('DT_DATETERMINATED', self.date_terminated)
+        dict_.add('BIT_ISSUBSTITUTE', self._yes_no(self.substitute))
         dict_.add('BIT_EMAILADMINNOTIFICATION',
             self._yes_no(self.pending_approval))
-        dict_.add('BIT_EMAILHTMLBODY', self._yes_no(self.html_format))
-        dict_.add('BIT_EMAILNEWACTIVITIES', self._yes_no(self.new_activities))
         dict_.add('BIT_EMAILNOTIFICATION', self._yes_no(self.approval_changes))
+        dict_.add('BIT_EMAILNEWACTIVITIES', self._yes_no(self.new_activities))
         dict_.add('BIT_EMAILREMINDEVENTS',
             self._yes_no(self.upcoming_activities))
         dict_.add('BIT_EMAILTEAMROOM', self._yes_no(self.teamroom_postings))
-        dict_.add('BIT_ISDISTRICTADMIN', self._yes_no(self.admin))
-        dict_.add('BIT_ISINSTRUCTIONAL', self._yes_no(self.certificate_holder))
-        dict_.add('BIT_ISINSTRUCTOR', self._yes_no(self.instructor))
-        dict_.add('BIT_ISSUBSTITUTE', self._yes_no(self.substitute))
-        dict_.add('btn_Submit.x', 100)
-        dict_.add('DT_CERTIFICATEEXPIRATIONDATE', self.certificate_expiration)
-        dict_.add('DT_DATEHIRED', self.date_hired)
-        dict_.add('DT_DATEOFBIRTH', self.dob)
-        dict_.add('DT_DATETERMINATED', self.date_terminated)
-        dict_.add('ENC_SID', self.ssn)
-        dict_.add('F', 10045) # the ID of the form we are submitting
-        dict_.add('I', self.pg_id)
+        dict_.add('INT_EMAILREMINDDAYS', self.num_of_days)
+        dict_.add('BIT_EMAILHTMLBODY', self._yes_no(self.html_format))
         for key in self.buildings.keys():
             dict_.add('INT_BUILDINGID', key)
         for key in self.departments.keys():
             dict_.add('INT_DEPARTMENTID', key)
-        dict_.add('INT_EMAILREMINDDAYS', self.num_of_days)
-        for key in self.catalogs.keys():
-            dict_.add('INT_PROGRAMADMINID', key)
-        dict_.add('M', 'E') # ??? employee ???
-        dict_.add('O', self.pg_id)
-        dict_.add('RURL', '')    
-        dict_.add('VAR_CERTIFICATEID', self.certificate_id)
-        dict_.add('VAR_EMAIL', self.email)
-        dict_.add('VAR_EMPLOYEEID', self.payroll_id)
-        dict_.add('VAR_FIRSTNAME', self.first_name)
-        dict_.add('VAR_JOBTITLE', self.job_title)
-        dict_.add('VAR_LASTNAME', self.last_name)
-        dict_.add('VAR_POSITIONTYPE', self.job_code)
+        dict_.add('btn_Submit.x', 100)
         return dict_
 
     def equals(self, user):
@@ -184,18 +184,23 @@ class User():
         if self.email != user.email:
             logging.debug("Emails names do not match.")
             return False
+        if self.payroll_id != user.payroll_id:
+            logging.debug("Payroll IDs do not match.")
+            return False
         True
 
     def __repr__(self):
         return (
             "PG User "
             "pg_id={} "
+            "payroll_id={} "
             "first_name={} "
             "last_name={} "
             "email={} "
             "active={}"
         ).format(
             self.pg_id,
+            self.payroll_id,
             self.first_name,
             self.last_name,
             self.email,

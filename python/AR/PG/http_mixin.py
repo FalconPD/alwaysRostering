@@ -27,7 +27,7 @@ class HTTPMixin():
             try:
                 resp = await self.session.request(method, url, json=json, params=params,
                     data=data, allow_redirects=allow_redirects)
-        #            proxy='http://localhost:8888', verify_ssl=False)
+                    #proxy='http://localhost:8888', verify_ssl=False)
                 logging.debug("HTTP RESPONSE {}".format(resp.status))
                 if resp.status >= 400:
                     logging.error("HTTP {}".format(resp.status))
