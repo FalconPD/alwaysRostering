@@ -64,7 +64,7 @@ teacher_job_codes = [
     '2322',
     '2400',
     '2401',
-    '2405',
+    '2405', # Resource Program In-Class
     '2406',
     '2645', # Television Production
     '3135', # Structured Learning Experience Coordinator
@@ -104,6 +104,7 @@ edservices_job_codes = [
     '3105', # Media Specialist
     '3111', # OT
     '3112', # PT
+    '3113', # Athletic Trainer
     '3116', # Psychologist
     '3117', # Social Worker
     '3118', # LDTC
@@ -114,6 +115,26 @@ edservices_job_codes = [
 ]
 nurse_job_codes = [
     '3114' # School Nurse
+]
+noncert_job_codes = [
+    '0029', # Non-instructional Paraprofessionals (Serving Ages 3-5)
+    '0030', # Non-instructional Paraprofessionals (Serving Ages 6-21)
+    '0032', # Clerical/Secretarial
+    '0033', # Service Workers
+    '0035', # Laborers Unskilled
+    '0034', # Skilled Craftperson's
+    '9000', # Professional Staff
+    '9025', # BCBA Behavior Specialist
+    '9030', # Data Coordinator
+    '9100', # Instructional Paraprofessionals (Serving Ages 3-5)
+    '9101', # Instructional Paraprofessionals (Serving Ages 6-21)
+    '9150', # Non-instruction Paraprofessionals (Serving Ages 3-5)
+    '9151', # Non-instructional Paraprofessionals (Serving Ages 6-21)
+    '9200', # Technicians
+    '9300', # Clerical/Secretarial
+    '9400', # Service Workers
+    '9500', # Skilled Craftperson's
+    '9600', # Laborers Unskilled
 ]
 
 db_session = None
@@ -259,11 +280,56 @@ def fieldtrip_admins():
         '5158', # MLS
         '5156', # OTS
         '5251', # PPS
+        '8167', # PPS
         '4950', # Transportation
         '5296', # WES
     ]
     extra_query = staff().filter(DistrictTeacher.teacher_id.in_(extra_ids))
-    return staff_by_job_codes(nurse_job_codes).union(extra_query)
+    return nurses().union(extra_query)
+
+# There is no difference in job code for the various types of secretaries so
+# they must be specified by teacher_id
+def principal_secretaries():
+    return staff().filter(DistrictTeacher.teacher_id.in_([
+        '5293', # AES
+        '5139', # BBS
+        '5211', # BES
+        '5158', # MLS
+        '5369', # MTHS
+        '5156', # OTS
+        '5297', # WLS
+    ]))
+
+def curriculum_secretaries():
+    return staff().filter(DistrictTeacher.teacher_id.in_([
+        '7199',
+        '269',
+        '5119',
+    ]))
+
+def hr_department():
+    return staff().filter(DistrictTeacher.teacher_id.in_([
+        '7144', # HR Director
+        '6792', # Secretary: Employee AESOP / Certifications / Tuition Reimbursement
+        '5390', # Secretary: Postings / Picture ID / New Hires
+    ]))
+
+def cert_staff():
+    return staff().except_(staff_by_job_codes(noncert_job_codes))
+
+def secretaries():
+    return staff_by_job_codes(['9300'])
+
+def media_staff():
+    """
+    Returns a query of ALL media center staff including Media Coordinators who
+    are not certificated and DO NOT have a specific job code
+    """
+    extra_ids = [
+        '7110', # MTMS Media Coordinator
+    ]
+    extra_query = staff().filter(DistrictTeacher.teacher_id.in_(extra_ids))
+    return staff_by_job_codes(['3105', '3106']).union(extra_query)
 
 def schools():
     """

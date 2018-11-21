@@ -10,7 +10,10 @@ import AR.AR as AR
 import AR.PG as professional_growth
 from AR.PG.user import User
 
-def create_user(teacher):
+# This prevents some deepcopy errors
+sys.setrecursionlimit(10000)
+
+def create_user(teacher, active):
     """
     Atttempts to lookup a user on PG by their payroll ID or first and last
     name, makes a copy of that user object, and updates certain attributes. New
@@ -25,10 +28,11 @@ def create_user(teacher):
     if user != None:
         new_user = copy.deepcopy(user)
     else:
-        print("Adding: {}".format(teacher))
         new_user = User()
         new_user.pg_id = None
-        new_user.active = True
+        new_user.email = teacher.email
+
+    new_user.active = active
 
     # These are the only attributes we automatically update
     new_user.first_name=teacher.teacher_first_name
@@ -43,20 +47,29 @@ async def sync_users():
     """
     # Create a list of active users that should be setup in PG
     current_users = []
-    for teacher in AR.teachers():
-        current_users.append(create_user(teacher))
-    for admin in AR.admins():
-        current_users.append(create_user(admin))
-    for edservice in AR.edservices():
-        current_users.append(create_user(edservice))
-    for fieldtrip_admin in AR.fieldtrip_admins():
-        current_users.append(create_user(fieldtrip_admin))
-    for sysadmin in AR.sysadmins():
-        current_users.append(create_user(sysadmin))
+    for teacher in (
+        AR.cert_staff()                 # Certificated Staff
+        .union(AR.secretaries())        # Secretaries
+        .union(AR.sysadmins())          # IT
+        .union(AR.hr_department())      # HR
+        .union(AR.fieldtrip_admins())   # Everyone needed to approve a field trip
+        .union(AR.media_staff())):      # Media staff are NOT all certificated
+        current_users.append(create_user(teacher, True))
+
+    for user in current_users:
+        if user.pg_id == None:
+            print("Adding: {}".format(user))
+        else:
+            if PG.user_by_id(user.pg_id) != user:
+                print("Updating: {}".format(user))
+                await PG.save_user(user)
 
     in_pg = { user.pg_id for user in PG.users if user.active }
     in_current_users = { user.pg_id for user in current_users }
-    for pg_id in in_pg - in_current_users:
+    deletes = in_pg - in_current_users
+    adds = in_current_users - in_pg
+    print("{} total deletes".format(len(deletes)))
+    for pg_id in deletes:
         print("Deleting: {}".format(PG.user_by_id(pg_id)))
 
 @click.group(chain=True)

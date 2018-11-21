@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
 from multidict import MultiDict
+import logging
 
 class User():
     """
@@ -71,37 +72,8 @@ class User():
         """
         Sets up a user instance from a dict
         """
-        self.pg_id                  = dict_['pg_id']
-        self.first_name             = dict_['first_name']
-        self.last_name              = dict_['last_name']
-        self.email                  = dict_['email']
-        self.instructor             = dict_['instructor']
-        self.admin                  = dict_['admin']
-        self.active                 = dict_['active']
-        self.catalogs               = dict_['catalogs']
-        self.certificate_holder     = dict_['certificate_holder']
-        self.ssn                    = dict_['ssn']
-        self.certificate_id         = dict_['certificate_id']
-        self.certificate_expiration = dict_['certificate_expiration']
-        self.dob                    = dict_['dob']
-        self.job_title              = dict_['job_title']
-        self.job_code               = dict_['job_code']
-        self.payroll_id             = dict_['payroll_id']
-        self.date_hired             = dict_['date_hired']
-        self.date_terminated        = dict_['date_terminated']
-        self.substitute             = dict_['substitute']
-        self.pending_approval       = dict_['pending_approval']
-        self.approval_changes       = dict_['approval_changes']
-        self.new_activities         = dict_['new_activities']
-        self.upcoming_activities    = dict_['upcoming_activities']
-        self.teamroom_postings      = dict_['teamroom_postings']
-        self.num_of_days            = dict_['num_of_days']
-        self.html_format            = dict_['html_format']
-        self.buildings              = dict_['buildings']
-        self.departments            = dict_['departments']
-        self.grades                 = dict_['grades']
-        self.groups                 = dict_['groups']
-        self.budget_codes           = dict_['budget_codes']
+        for key, value in dict_.items():
+            setattr(self, key, value)
 
     def __init__(self, html=None, dict_=None):
         """
@@ -123,7 +95,7 @@ class User():
     
     def data(self):
         """
-        Returns a MultiDict (needed for lists) usbed by the save operation
+        Returns a MultiDict (needed for lists) used by the save operation
         """
         dict_ = MultiDict()
         dict_.add('RURL', '')    
@@ -164,30 +136,31 @@ class User():
             dict_.add('INT_BUILDINGID', key)
         for key in self.departments.keys():
             dict_.add('INT_DEPARTMENTID', key)
+        for key in self.grades.keys():
+            dict_.add('INT_GRADEID', key)
+        for key in self.groups.keys():
+            dict_.add('INT_GROUPID', key)
+        for key in self.budget_codes.keys():
+            dict_.add('INT_FUNDINGID', key)
         dict_.add('btn_Submit.x', 100)
         return dict_
-
-    def equals(self, user):
+    
+    def __eq__(self, other):
         """
-        Checks to see if two users are the same. Right now we only check a
-        minimal set of attributes
+        Checks to see if two users are the same.
         """
-        logging.debug("Comparing:")
-        logging.debug(self)
-        logging.debug(user)
-        if self.first_name != user.first_name:
-            logging.debug("First names do not match.")
+        if other == None:
             return False
-        if self.last_name != user.last_name:
-            logging.debug("Last names do not match.")
-            return False
-        if self.email != user.email:
-            logging.debug("Emails names do not match.")
-            return False
-        if self.payroll_id != user.payroll_id:
-            logging.debug("Payroll IDs do not match.")
-            return False
-        True
+        if logging.getLogger().isEnabledFor(logging.DEBUG):
+            logging.debug("Comparing:")
+            logging.debug(self)
+            logging.debug(other)
+            self_dict = self.__dict__
+            other_dict = other.__dict__
+            for key in self_dict.keys():
+                if self_dict[key] != other_dict[key]:
+                    print("{}: {}->{}".format(key, self_dict[key], other_dict[key]))
+        return self.__dict__ == other.__dict__
 
     def __repr__(self):
         return (
