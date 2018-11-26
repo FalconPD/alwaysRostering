@@ -255,14 +255,28 @@ async def check(Schoology):
                 schoology_course_sections = add_list(
                 schoology_course_sections, course_sections)
 
-    print("\nSynced Schoology sections NOT in Genesis:")
-    for schoology_section in schoology_course_sections:
-        if schoology_section['synced'] == '1':
-            if schoology_section['section_school_code'] not in genesis_section_school_codes:
-                print("{} Schoology ID: {}".format(
+    print("\nSynced Schoology sections in Genesis with '0' for grading period:")
+    async with Schoology.CourseSections as CourseSections:
+        for schoology_section in schoology_course_sections:
+            if (schoology_section['synced'] == '1' and
+                schoology_section['section_school_code'] in genesis_section_school_codes and
+                schoology_section['grading_periods'] == [0]):
+                print("Fixing {} Schoology ID: {}".format(
                     schoology_section['section_school_code'],
                     schoology_section['id']))
-        
+                # FIXME: This should not be hardcoded and CourseSections should
+                # implement a queue
+                schoology_section['grading_periods'] = [589077]
+                await CourseSections.update(schoology_section)
+                
+    print("Synced Schoology sections NOT in Genesis:")
+    for schoology_section in schoology_course_sections:
+        if (schoology_section['synced'] == '1' and
+            schoology_section['section_school_code'] not in genesis_section_school_codes):
+            print("{} Schoology ID: {} (should delete in future)".format(
+                schoology_section['section_school_code'],
+                schoology_section['id']))
+
 async def sync(loop, db_file):
     """
     Performs all steps to sync Schoology with a Genesis Database and perform
@@ -270,13 +284,13 @@ async def sync(loop, db_file):
     """
     AR.init(db_file)
     async with schoology.Session() as Schoology:
-        await add_update_buildings(loop, Schoology)
-        (students, teachers, admins, sysadmins, all_ids) = create_user_queries()
-        await add_update_users(loop, students, teachers, admins, sysadmins,
-            Schoology)
-        await delete_users(loop, all_ids, Schoology)
-        await add_update_courses(loop, Schoology)
-        await add_enrollments(loop, Schoology)
+        #await add_update_buildings(loop, Schoology)
+        #(students, teachers, admins, sysadmins, all_ids) = create_user_queries()
+        #await add_update_users(loop, students, teachers, admins, sysadmins,
+        #    Schoology)
+        #await delete_users(loop, all_ids, Schoology)
+        #await add_update_courses(loop, Schoology)
+        #await add_enrollments(loop, Schoology)
         await check(Schoology)
 
 if __name__ == '__main__':

@@ -30,6 +30,13 @@ class CourseSections():
         async for response in self.session.list_pages(endpoint):
             yield response['section']
 
+    async def update(self, course_section):
+        """
+        Updates a single course section
+        """
+        await self.session.put('sections/' + course_section['id'],
+            json=course_section);
+
 #    def create_section_object(title, section_school_code):
 #        """Creates a Schoology Course Section object"""
 #        

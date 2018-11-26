@@ -30,9 +30,9 @@ class Session(HTTPMixin, UsersMixin):
         self.session = aiohttp.ClientSession(cookies=cookies)
         if self.user_file != None:
             try:
-                self.users = []
-                for dict_user in json.load(open(self.user_file)):
-                    self.users.append(User(dict_=dict_user))                                    
+                self.users = {}
+                for payroll_id, user_dict in json.load(open(self.user_file)).items():
+                    self.users[payroll_id] = User(dict_=user_dict)
             except FileNotFoundError:
                 self.users = await self.load_users()
         return self
@@ -44,7 +44,9 @@ class Session(HTTPMixin, UsersMixin):
         await self.session.close()
         if self.user_file != None:
             with open(self.user_file, 'w') as out:
-                dict_users = [ user.__dict__ for user in self.users ]
+                dict_users = {}
+                for payroll_id, user in self.users.items():
+                    dict_users[payroll_id] = user.__dict__
                 json.dump(dict_users, out, sort_keys=True, indent=4) 
 
     async def login(self):

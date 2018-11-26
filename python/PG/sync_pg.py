@@ -15,38 +15,34 @@ sys.setrecursionlimit(10000)
 
 def create_user(teacher, active):
     """
-    Atttempts to lookup a user on PG by their payroll ID or first and last
-    name, makes a copy of that user object, and updates certain attributes. New
-    users are created.
+    Atttempts to lookup a user on PG by their payroll ID, makes a copy of that
+    user object, and updates certain attributes. New users are created.
     """
     # If they are already in PG use their existing info as a basis for
     # updates
-    user = PG.user_by_payroll(teacher.other_id_number)
-    if user == None:
-        user = PG.user_by_name(teacher.teacher_first_name,
-            teacher.teacher_last_name)
-    if user != None:
-        new_user = copy.deepcopy(user)
+    payroll_id = teacher.other_id_number
+    if payroll_id in PG.users:
+        user = copy.deepcopy(PG.users[payroll_id])
     else:
-        new_user = User()
-        new_user.pg_id = None
-        new_user.email = teacher.email
+        user = User()
+        user.pg_id = None
+        user.email = teacher.email
+        user.payroll_id = payroll_id
 
-    new_user.active = active
+    user.active = active
 
     # These are the only attributes we automatically update
-    new_user.first_name=teacher.teacher_first_name
-    new_user.last_name=teacher.teacher_last_name
-    new_user.payroll_id=teacher.other_id_number
+    user.first_name=teacher.teacher_first_name
+    user.last_name=teacher.teacher_last_name
 
-    return new_user
+    return user
 
 async def sync_users():
     """
     Makes sure Genesis users and Professional Growth users are in sync    
     """
     # Create a list of active users that should be setup in PG
-    current_users = []
+    current_users = {}
     for teacher in (
         AR.cert_staff()                 # Certificated Staff
         .union(AR.secretaries())        # Secretaries
@@ -54,23 +50,27 @@ async def sync_users():
         .union(AR.hr_department())      # HR
         .union(AR.fieldtrip_admins())   # Everyone needed to approve a field trip
         .union(AR.media_staff())):      # Media staff are NOT all certificated
-        current_users.append(create_user(teacher, True))
+        payroll_id = teacher.other_id_number
+        if payroll_id == '':
+            logging.warning("Missing payroll_id for {}".format(user))
+        else:
+            current_users[payroll_id]=create_user(teacher, True)
 
-    for user in current_users:
+    for payroll_id, user in current_users.items():
         if user.pg_id == None:
             print("Adding: {}".format(user))
         else:
-            if PG.user_by_id(user.pg_id) != user:
+            if PG.users[payroll_id] != user:
                 print("Updating: {}".format(user))
-                await PG.save_user(user)
+#                await PG.save_user(user)
 
-    in_pg = { user.pg_id for user in PG.users if user.active }
-    in_current_users = { user.pg_id for user in current_users }
-    deletes = in_pg - in_current_users
-    adds = in_current_users - in_pg
-    print("{} total deletes".format(len(deletes)))
-    for pg_id in deletes:
-        print("Deleting: {}".format(PG.user_by_id(pg_id)))
+#    in_pg = { user.pg_id for user in PG.users if user.active }
+#    in_current_users = { user.pg_id for user in current_users }
+#    deletes = in_pg - in_current_users
+#    adds = in_current_users - in_pg
+#    print("{} total deletes".format(len(deletes)))
+#    for pg_id in deletes:
+#        print("Deleting: {}".format(PG.user_by_id(pg_id)))
 
 @click.group(chain=True)
 @click.option("--debug", is_flag=True, help="Print debugging statements.")
