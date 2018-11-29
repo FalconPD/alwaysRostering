@@ -4,9 +4,9 @@ from AR.tables import Base, utils
 
 class StaffEmploymentRecord(Base):
     __tablename__ = 'STAFF_EMPLOYMENT_RECORDS'
-#    __table_args__ = (
-#        ForeignKeyConstraint(['TEACHER_ID'], ['DISTRICT_TEACHERS.TEACHER_ID']),
-#    )
+    __table_args__ = (
+        ForeignKeyConstraint(['TEACHER_ID'], ['DISTRICT_TEACHERS.TEACHER_ID']),
+    )
 
     created_by_portal_oid = Column('CREATED_BY_PORTAL_OID',  BigInteger)
     created_by_task_oid = Column('CREATED_BY_TASK_OID',  BigInteger)
@@ -25,7 +25,7 @@ class StaffEmploymentRecord(Base):
     start_date = Column('START_DATE', Date, nullable=False)
     teacher_id = Column('TEACHER_ID', String(10), nullable=False)
 
-    #district_teacher = relationship('DistrictTeacher', back_populates='employment_records')
+    district_teacher = relationship('DistrictTeacher', back_populates='employment_records')
 
     report_code = '991114',
     csv_header = [ 

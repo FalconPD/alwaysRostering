@@ -46,7 +46,7 @@ class Session(HTTPMixin, UsersMixin):
             with open(self.user_file, 'w') as out:
                 dict_users = {}
                 for payroll_id, user in self.users.items():
-                    dict_users[payroll_id] = user.__dict__
+                    dict_users[payroll_id] = user.to_dict() # json serializable
                 json.dump(dict_users, out, sort_keys=True, indent=4) 
 
     async def login(self):

@@ -110,9 +110,9 @@ class DistrictTeacher(Base):
     teacher_zipcode = Column('TEACHER_ZIPCODE', String(15))
 
     job_roles = relationship('StaffJobRole', back_populates='district_teacher')
-#    employment_records = relationship('StaffEmploymentRecord',
-#        back_populates='district_teacher',
-#        order_by='StaffEmploymentRecord.start_date')
+    employment_records = relationship('StaffEmploymentRecord',
+        back_populates='district_teacher',
+        order_by='StaffEmploymentRecord.start_date')
     school_teacher = relationship('SchoolTeacher', viewonly=True,
         back_populates='district_teacher')
     subsections = relationship('CourseSubsection', back_populates='teacher',

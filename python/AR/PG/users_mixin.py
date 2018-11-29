@@ -20,10 +20,10 @@ class UsersMixin():
         
     async def load_users(self):
         """
-        Gets all users on PG and puts them in a dict by payroll_id
+        Gets all ACTIVE users on PG and puts them in a dict by payroll_id
         A user MUST have a valid and unique payroll_id in PG for this to work
         """
-        resp = await self.get('https://www.mylearningplan.com/DistrictAdmin/UserList.asp?V=ALL')
+        resp = await self.get('https://www.mylearningplan.com/DistrictAdmin/UserList.asp?V=A')
         soup = BeautifulSoup(await resp.text(), 'html.parser')
         tasks = []
         for link in soup('a'):
@@ -33,7 +33,8 @@ class UsersMixin():
         payroll_id_regex = re.compile('\d{6}')
         users = {}
         for user in await asyncio.gather(*tasks):
-            if payroll_id_regex.match(user.payroll_id):
+            if (payroll_id_regex.match(user.payroll_id) and
+                user.payroll_id not in users):
                 users[user.payroll_id] = user
             else:
                 logging.warning("Invalid payroll_id {}".format(user))
@@ -46,6 +47,9 @@ class UsersMixin():
         resp = await self.post('https://www.mylearningplan.com/Forms.asp',
             data=user.data())
         soup = BeautifulSoup(await resp.text(), 'html.parser')
-        if list(soup.find('h1').strings)[0] != 'Confirmation':
-            logging.error("Error while saving user {}")
+        h1 = soup.find('h1')
+        if h1 == None or list(h1.strings)[0] != 'Confirmation':
+            logging.error("Error(s) while saving user {}:".format(user))
+            for error in soup.find('ul', class_='alert-error-list').strings:
+                logging.error("{}".format(error))
             sys.exit(1)

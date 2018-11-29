@@ -18,22 +18,15 @@ def create_user(teacher, active):
     Atttempts to lookup a user on PG by their payroll ID, makes a copy of that
     user object, and updates certain attributes. New users are created.
     """
-    # If they are already in PG use their existing info as a basis for
-    # updates
     payroll_id = teacher.other_id_number
     if payroll_id in PG.users:
         user = copy.deepcopy(PG.users[payroll_id])
+
+        # These are the only attributes we automatically update
+        user.first_name=teacher.teacher_first_name
+        user.last_name=teacher.teacher_last_name
     else:
-        user = User()
-        user.pg_id = None
-        user.email = teacher.email
-        user.payroll_id = payroll_id
-
-    user.active = active
-
-    # These are the only attributes we automatically update
-    user.first_name=teacher.teacher_first_name
-    user.last_name=teacher.teacher_last_name
+        user = User(teacher=teacher)
 
     return user
 
@@ -52,25 +45,22 @@ async def sync_users():
         .union(AR.media_staff())):      # Media staff are NOT all certificated
         payroll_id = teacher.other_id_number
         if payroll_id == '':
-            logging.warning("Missing payroll_id for {}".format(user))
+            logging.warning("Missing payroll_id for {}".format(teacher))
         else:
             current_users[payroll_id]=create_user(teacher, True)
 
     for payroll_id, user in current_users.items():
         if user.pg_id == None:
             print("Adding: {}".format(user))
+#            await PG.save_user(user)
         else:
             if PG.users[payroll_id] != user:
                 print("Updating: {}".format(user))
 #                await PG.save_user(user)
 
-#    in_pg = { user.pg_id for user in PG.users if user.active }
-#    in_current_users = { user.pg_id for user in current_users }
-#    deletes = in_pg - in_current_users
-#    adds = in_current_users - in_pg
-#    print("{} total deletes".format(len(deletes)))
-#    for pg_id in deletes:
-#        print("Deleting: {}".format(PG.user_by_id(pg_id)))
+    for payroll_id, user in PG.users.items():
+        if payroll_id not in current_users:
+            print("Deactivating: {}".format(user))
 
 @click.group(chain=True)
 @click.option("--debug", is_flag=True, help="Print debugging statements.")
