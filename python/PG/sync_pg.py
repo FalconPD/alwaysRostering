@@ -4,6 +4,7 @@ import logging
 from sqlalchemy import func
 import sys
 import copy
+import time
 
 sys.path.append('..')
 import AR.AR as AR
@@ -63,16 +64,15 @@ async def sync_users():
             print("Deactivating: {}".format(user))
 
 @click.group(chain=True)
+@click.argument('genesis_db_file', type=click.Path(exists=True), metavar='GENESIS_DB')
+@click.argument('pg_db_file', type=click.Path(writable=True), metavar='PG_DB')
 @click.option("--debug", is_flag=True, help="Print debugging statements.")
-@click.option("--user_file", type=click.Path(readable=True, writable=True),
-    help="Load/Save the PG user database from/in this file. If it does not " +
-    "exist it will be created with the data currently on PG.")
-@click.argument('db_file', type=click.Path(exists=True), metavar='DB_FILE')
-def cli(db_file, user_file, debug):
+def cli(genesis_db_file, pg_db_file, debug):
     """
     Command line interface for working with Frontline Professional Growth
 
-    Loads the Genesis database from DB_FILE and performs COMMAND(s).
+    Loads the Genesis database from GENESIS_DB, uses the Professional Growth
+    database located at PG_DB and performs COMMAND(s).
     """
     global loop
     global PG
@@ -89,11 +89,13 @@ def cli(db_file, user_file, debug):
 
     # Load the Genesis database
     print("Loading Genesis database...")
-    AR.init(db_file)
+    AR.init(genesis_db_file)
 
     # Create a new PG session (designed for an async with)
-    print("Logging into Professional Growth and loading users...")
-    PG = loop.run_until_complete(professional_growth.Session(user_file).__aenter__())
+    print("Logging into Professional Growth...")
+    PG = loop.run_until_complete(
+        professional_growth.Session(pg_db_file).__aenter__()
+    )
         
 @cli.command(name="sync_users")
 def cli_sync_users():
@@ -101,6 +103,14 @@ def cli_sync_users():
     sync up user accounts
     """
     loop.run_until_complete(sync_users())
+
+@cli.command(name="download")
+def cli_download():
+    """
+    downloads all tables from PG 
+    """
+    print("Downloading tables from Professional Growth...")
+    loop.run_until_complete(PG.download())
 
 @cli.resultcallback()
 def cli_close(result, **kwargs):

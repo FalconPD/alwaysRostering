@@ -10,5 +10,7 @@ click = "*"
 "beautifulsoup4" = "*"
 selenium = "*"
 multidict = "*"
+openpyxl = "*"
+xlrd = "*"
 
 [dev-packages]

@@ -4,20 +4,25 @@ import json
 from selenium.webdriver import Firefox
 from selenium.webdriver.firefox.options import Options
 
+import sqlalchemy
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
 from AR.util.token_bucket import TokenBucket
 from AR.PG import constants
 from AR.PG.http_mixin import HTTPMixin
-from AR.PG.users_mixin import UsersMixin
+from AR.PG.download_mixin import DownloadMixin
 from AR.PG.user import User
 
-class Session(HTTPMixin, UsersMixin):
+class Session(HTTPMixin, DownloadMixin):
     """
     A context manager to handle logging in and loading users
     """
     session = None # our aiohttp session
+    db_session = None # our sqlalchemy session
 
-    def __init__(self, user_file):
-        self.user_file = user_file
+    def __init__(self, db_file):
+        self.db_file = db_file
 
     async def __aenter__(self):
         """
@@ -28,26 +33,18 @@ class Session(HTTPMixin, UsersMixin):
             constants.TOKEN_RATE) 
         cookies = await self.login()
         self.session = aiohttp.ClientSession(cookies=cookies)
-        if self.user_file != None:
-            try:
-                self.users = {}
-                for payroll_id, user_dict in json.load(open(self.user_file)).items():
-                    self.users[payroll_id] = User(dict_=user_dict)
-            except FileNotFoundError:
-                self.users = await self.load_users()
+
+        self.engine = create_engine('sqlite:///{}'.format(self.db_file))
+        Session = sessionmaker(bind=self.engine)
+        self.db_session = Session()
         return self
 
     async def __aexit__(self, *exc):
         """
-        Closes aiohttp session, writes PG users if requested
+        Closes aiohttp session and commits sqlalchemy session
         """
         await self.session.close()
-        if self.user_file != None:
-            with open(self.user_file, 'w') as out:
-                dict_users = {}
-                for payroll_id, user in self.users.items():
-                    dict_users[payroll_id] = user.to_dict() # json serializable
-                json.dump(dict_users, out, sort_keys=True, indent=4) 
+        self.db_session.commit()
 
     async def login(self):
         """

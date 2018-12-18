@@ -4,6 +4,7 @@ import asyncio
 import logging
 import sys
 import re
+import json
 
 class UsersMixin():
     """
@@ -53,3 +54,13 @@ class UsersMixin():
             for error in soup.find('ul', class_='alert-error-list').strings:
                 logging.error("{}".format(error))
             sys.exit(1)
+
+    def save_user_snapshot(self, filename):
+        """
+        Saves our list of users in a JSON file
+        """
+        with open(filename, 'w') as out:
+            dict_users = {}
+            for payroll_id, user in self.users.items():
+                dict_users[payroll_id] = user.to_dict() # json serializable
+            json.dump(dict_users, out, sort_keys=True, indent=4)
