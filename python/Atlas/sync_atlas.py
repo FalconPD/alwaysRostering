@@ -25,6 +25,7 @@ async def sync_users():
         .union(AR.edservices())
         .union(AR.curradmins())
         .union(AR.sysadmins())
+        .union(AR.hr_department())
     ):
         atlas_id = Atlas.id_map.get_atlas(teacher.teacher_id)
         user = User(atlas_id, teacher.teacher_first_name,
@@ -43,7 +44,7 @@ async def sync_users():
         current_users[atlas_id] = Atlas.users[atlas_id]
 
     # Set attributes and privileges
-    for teacher in AR.sysadmins():
+    for teacher in AR.sysadmins().union(AR.hr_department()):
         atlas_id = Atlas.id_map.get_atlas(teacher.teacher_id)
         user = current_users[atlas_id]
         user.attributes.append('System Admin')
