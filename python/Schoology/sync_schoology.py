@@ -265,7 +265,7 @@ async def check(Schoology):
                     schoology_section['section_school_code'],
                     schoology_section['id']))
                 # FIXME: This should not be hardcoded and CourseSections should
-         #       # implement a queue
+                # implement a queue
                 schoology_section['grading_periods'] = [589077]
                 await CourseSections.update(schoology_section)
                 
@@ -283,6 +283,7 @@ async def sync(loop, db_file):
     some checks
     """
     AR.init(db_file)
+
     async with schoology.Session() as Schoology:
         await add_update_buildings(loop, Schoology)
         (students, teachers, admins, sysadmins, all_ids) = create_user_queries()

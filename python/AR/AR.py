@@ -203,8 +203,15 @@ def staff_by_job_codes(job_codes):
 def teachers():
     """
     Returns a query of teachers
+    Manually adds teachers who do not have SMIDs yet but should be setup with
+    subscription services
     """
-    return staff_by_job_codes(teacher_job_codes)
+    extra_ids = ['8326', '8319']
+    extra_query = (
+        db_session.query(DistrictTeacher)
+        .filter(DistrictTeacher.teacher_id.in_(extra_ids))
+    )
+    return staff_by_job_codes(teacher_job_codes).union(extra_query)
 
 def admins():
     """

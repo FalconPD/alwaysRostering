@@ -11,3 +11,5 @@ __pycache__/
 output.txt
 geckodriver.log
 python/PG/*.json
+python/databases/*
+rostering.conf

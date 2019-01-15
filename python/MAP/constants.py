@@ -204,6 +204,26 @@ EXTRA_CLASSES = {
         'teacher_id': '603',
         'student_ids': ('89662', '92433', '91570', '90638', '89695')
     },
+    'LAL Resource (Unrostered in Genesis)': {
+        'teacher_id': '5929',
+        'student_ids': ('89829', '91235', '90448', '89848', '90407', '88264')
+    },
+    'Kindergarten (Unrostered in Genesis)': {
+        'teacher_id': '5076',
+        'student_ids': ('92682', '92654', '92720', '93418', '92633', '91141',
+            '92668')
+    },
+    'First Grade (Unrostered in Genesis)': {
+        'teacher_id': '5076',
+        'student_ids': ('92517', '93050', '93091', '91844', '92292', '93245',
+            '93462', '92984', '91786', '91790', '91879', '91757', '92445',
+            '91861', '93116', '91802', '92225', '91858', '93452')
+    },
+    'Second Grade (Unrostered in Genesis)': {
+        'teacher_id': '5076',
+        'student_ids': ('90826', '92959', '93389', '92150', '91635', '92377',
+            '91079', '92868', '92578', '90787', '91384', '93331')
+    },
 }
 
 DUPLICATES = {

@@ -3,8 +3,6 @@ import asyncio
 import logging
 from sqlalchemy import func
 
-import sys
-sys.path.append('..')
 import AR.AR as AR
 import AR.atlas as atlas
 from AR.tables import DistrictTeacher
@@ -70,9 +68,6 @@ async def sync_users():
             print("Updating: {} {} {} (Atlas ID {})".format(user.first_name,
                 user.last_name, user.email, user.atlas_id))
             tasks.append(Atlas.update_user(user, genesis_id))
-            if len(tasks) >= 100: # testing, one hundred at a time
-                break;
-            continue
 
     await asyncio.gather(*tasks)
 

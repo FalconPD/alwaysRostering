@@ -9,6 +9,8 @@ from AR.PG.tables import UserProfile
 from AR.PG.tables import LearningPlan
 from AR.PG.tables import Activity
 from AR.PG.tables import ActivityFormat
+from AR.PG.tables import Goal
+from AR.PG.tables import ActivityObjective
 from AR.PG.tables import Base
 from AR.PG import constants
 
@@ -73,9 +75,10 @@ class DownloadMixin():
         Base.metadata.create_all(self.engine)
 
         # These tables are not dependent on a date range
-        book = await self._get_tables(['UserProfile', 'ActivityFormats'])
+        book = await self._get_tables(['UserProfile', 'ActivityFormats', 'Goals'])
         self._excel_to_db(book, 'UserProfile', UserProfile)
         self._excel_to_db(book, 'Activity_Formats', ActivityFormat)
+        self._excel_to_db(book, 'Goals', Goal)
 
         # These tables are dependent on a date range and can only be downloaded
         # in smaller chunks
@@ -88,4 +91,5 @@ class DownloadMixin():
                 date1=date1, date2=date2)
             self._excel_to_db(book, 'LearningPlan', LearningPlan)
             self._excel_to_db(book, 'Activities', Activity)
+            self._excel_to_db(book, 'Activities_Objectives', ActivityObjective)
             date1 = date2
