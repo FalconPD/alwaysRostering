@@ -241,10 +241,10 @@ def sysadmins():
 def curradmins():
     """
     Returns a query of people who can edit ALL curriculum:
-    * Ed Tech facilitator
-    * Assistant Superintedent
-    * Curriculum Secretary
     * Supervisors
+    * Assistant Superintendant
+    * Curriculum Secretaries
+    * Ed Tech facilitator
     """
     extra_ids = ['099', '7199']
     extra_query = (
@@ -253,7 +253,9 @@ def curradmins():
     )
 
     return (
-        staff_by_job_codes(supervisor_job_codes + ['0122']).union(extra_query)
+        staff_by_job_codes(supervisor_job_codes + ['0122'])
+        .union(curriculum_secretaries())
+        .union(extra_query)
     )
 
 def edservices():

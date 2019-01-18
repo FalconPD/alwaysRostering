@@ -12,4 +12,5 @@ output.txt
 geckodriver.log
 python/PG/*.json
 python/databases/*
+python/logs/*
 rostering.conf

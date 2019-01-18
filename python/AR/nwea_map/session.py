@@ -5,6 +5,7 @@ import logging
 import sys
 
 from AR.nwea_map import constants
+from AR.util.token_bucket import TokenBucket
 
 class Session():
     """
@@ -12,12 +13,14 @@ class Session():
     """
     async def __aenter__(self):
         """
-        Creates an aiohttp session and loads the credentials
+        Creates an aiohttp session, loads the credentials, and sets up a TBF
         """
         self.credentials = json.load(open('../include/credentials.json'))
         self.auth = aiohttp.BasicAuth(login=self.credentials['map']['username'],
             password=self.credentials['map']['password'])
         self.session = aiohttp.ClientSession()
+        self.token_bucket = TokenBucket(constants.MAX_TOKENS,
+            constants.TOKEN_RATE)
         return self
 
     async def __aexit__(self, *exc):
@@ -26,16 +29,18 @@ class Session():
         """
         await self.session.close()
 
-    async def request(self, method, url, files=None):
+    async def request(self, method, url, data=None):
         """
         Perform an HTTP request while submitting our credentials and checking for
         errors
         """
+        await self.token_bucket.get()
         logging.debug(f"HTTP {method} {url}")
-        resp = await self.session.request(method, url, files=files, auth=self.auth)
+        resp = await self.session.request(method, url, data=data, auth=self.auth)
         logging.debug(f"HTTP RESPONSE {resp.status}")
         if 400 <= resp.status < 500:
-            logging.error(f"HTTP {resp.status}")
+            text = await resp.text()
+            logging.error(f"HTTP {resp.status} {text}")
             sys.exit(1)
         return resp
 
@@ -45,11 +50,11 @@ class Session():
         """
         return await self.request('GET', url)
 
-    async def post(self, url, files):
+    async def post(self, url, data):
         """
         Shortcut for HTTP POST
         """
-        return await self.request('POST', url, files)
+        return await self.request('POST', url, data)
 
     async def status(self):
         """
@@ -65,5 +70,18 @@ class Session():
         resp = await self.get(constants.BASE_URL + 'errors')
         return await resp.text()
 
-    async def upload(self, standard_roster, additional_users):
-        pass
+    async def _upload(self, roster, filename, endpoint):
+        data = aiohttp.FormData()
+        data.add_field('file',
+            open(roster, 'rb'),
+            filename=filename),
+        resp = await self.post(constants.BASE_URL + endpoint, data=data)
+        return await resp.text()
+
+    async def upload_standard(self, standard_roster):
+        return await self._upload(standard_roster, 'rf.csv',
+            'submit/complete/update')
+
+    async def upload_additional(self, additional_roster):
+        return await self._upload(additional_roster, 'others.csv',
+            'submit/others')

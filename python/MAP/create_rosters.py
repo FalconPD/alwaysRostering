@@ -2,11 +2,9 @@ import csv
 import logging
 import click
 import constants
-import asyncio
 from sqlalchemy import or_, and_
 
 import AR.AR as AR
-import AR.nwea_map as nwea_map
 from AR.tables import CurriculumCourse, DistrictTeacher, School, Student
 from AR.tables import SchoolTeacher, CourseSection
 
@@ -246,22 +244,6 @@ def users():
         row['Role = SN Administrator?']                = ''
         additional_users.writerow(row)
 
-async def status():
-    """
-    Print out the status of the last upload from the server
-    """
-    async with nwea_map.Session() as MAP:
-        print(await MAP.status())
-        await asyncio.sleep(1)
-        print(await MAP.errors())
-
-async def upload():
-    """
-    Adds/Updates the StandardRoster and AdditionalUsers roster
-    """
-    async with nwea_map.Session() as MAP:
-        pass
-        
 @click.group(chain=True)
 @click.option('--debug', help="turn on debugging", is_flag=True)
 @click.argument('db_file', type=click.Path(exists=True))
@@ -274,9 +256,6 @@ def cli(debug, db_file, prefix):
     """
     global standard_roster
     global additional_users
-    global loop
-
-    loop = asyncio.get_event_loop()
 
     if debug:
         logging.basicConfig(level=logging.DEBUG)
@@ -332,20 +311,6 @@ def cli_additional_users():
     create AdditionalUsers file
     """
     users()
-
-@cli.command(name="status")
-def cli_upload_status():
-    """
-    print upload status and errors
-    """
-    loop.run_until_complete(status())
-
-@cli.command(name="upload")
-def cli_upload_status():
-    """
-    upload generated rosters
-    """
-    loop.run_until_complete(upload())
 
 @cli.command()
 def all():
