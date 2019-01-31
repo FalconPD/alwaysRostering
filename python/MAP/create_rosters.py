@@ -97,7 +97,7 @@ def roster_k3():
 
     print("Rostering K-3 classes that aren't in Genesis...")
     for class_name, class_info in constants.EXTRA_CLASSES.items(): 
-        teacher =  (AR.teachers()
+        teacher =  (AR.db_session.query(DistrictTeacher)
             .filter(DistrictTeacher.teacher_id==class_info['teacher_id'])
             .one()
         )

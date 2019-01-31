@@ -14,3 +14,6 @@ python/PG/*.json
 python/databases/*
 python/logs/*
 rostering.conf
+credentials.py
+*.log
+.env

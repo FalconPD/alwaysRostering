@@ -6,6 +6,7 @@ import re
 from sqlalchemy.orm import column_property
 from sqlalchemy import select, func
 from AR.tables import utils, Base, StudentUserText, ResidentDistrictTracking
+from AR.credentials import simple_credentials
 
 class Student(Base):
     __tablename__ = 'STUDENTS'
@@ -563,6 +564,67 @@ class Student(Base):
         else:
             return ""
 
+    @property
+    def homeroom_name(self):
+        """
+        A prettier name to use for a students homeroom
+        """
+        last_names = []
+        for teacher in self.homeroom_teachers:
+            last_names.append(teacher.teacher_last_name)
+        homeroom_name = "/".join(last_names)
+        suffix = self.homeroom_suffix
+        if suffix != "":
+            homeroom_name += ' ' + suffix
+        return homeroom_name
+
+    @property
+    def simple_username(self):
+        """
+        A simple(r) username for elementary students
+        """
+        return self.current_school.lower() + self.student_id
+
+    @property
+    def simple_password(self):
+        """
+        A simple password for elementary students
+        """
+        return self.current_school.lower() + simple_credentials['student']
+
+    @property
+    def academic_level(self):
+        """
+        A prettier version of grade_level
+        """
+        if self.grade_level == 'KH' or self.grade_level == 'KF':
+            return "Kindergarten"
+        if self.grade_level == '01':
+            return "1st Grade"
+        if self.grade_level == '02':
+            return "2nd Grade"
+        if self.grade_level == '03':
+            return "3rd Grade"
+        if self.grade_level == '04':
+            return "4th Grade"
+        if self.grade_level == '05':
+            return "5th Grade"
+        if self.grade_level == '06':
+            return "6th Grade"
+        if self.grade_level == '07':
+            return "7th Grade"
+        if self.grade_level == '08':
+            return "8th Grade"
+        if self.grade_level == '09':
+            return "9th Grade"
+        if self.grade_level == '10':
+            return "10th Grade"
+        if self.grade_level == '11':
+            return "11th Grade"
+        if self.grade_level == '12':
+            return "12th Grade"
+        return "Unknown"
+
 #    @property
 #    def next_school(self):
 #        """This can be derived from resident_district_code, grade_level,
@@ -574,7 +636,7 @@ class Student(Base):
             'Student '
             'student_id={} '
             'first_name={} '
-            'last_name={} '
+            'last_name={}'
         ).format(
             self.student_id,
             self.first_name,
