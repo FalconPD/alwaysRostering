@@ -4,23 +4,18 @@ import logging
 import sys
 import csv
 
-import sqlalchemy
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
 import AR.credentials as credentials
-from AR.education_city.download_mixin import DownloadMixin
+from AR.education_city.users_mixin import UsersMixin
 
-class Session(DownloadMixin):
+class Session(UsersMixin):
     """
     A context manager to handle logging in
     """
-    def __init__(self, school_code, db_file, loop):
+    def __init__(self, school_code, loop):
         """
         Setup the school code
         """
         self.school_code = school_code
-        self.db_file = db_file
         self.loop = loop
 
     async def __aenter__(self):
@@ -32,9 +27,6 @@ class Session(DownloadMixin):
         self.session = aiohttp.ClientSession()
         await self.login()
         
-        self.engine = create_engine(f'sqlite:///{self.db_file}')
-        Session = sessionmaker(bind=self.engine)
-        self.db_session = Session()
         return self
 
     async def __aexit__(self, *exc):
@@ -42,32 +34,32 @@ class Session(DownloadMixin):
         Closes aiohttp session and database session
         """
         await self.session.close()
-        self.db_session.commit()
 
-    async def request(self, method, url, data):
+    async def request(self, method, url, data, json):
         """
         Perform an HTTP request and do some error checking
         """
-        logging.debug(f"HTTP {method} {url} data={data}")
-        resp = await self.session.request(method, url, data=data)
+        logging.debug(f"HTTP {method} {url} data={data} json={json}")
+        resp = await self.session.request(method, url, data=data, json=json)
 #            proxy='http://localhost:8888', verify_ssl=False)
         logging.debug('HTTP RESPONSE {}'.format(resp.status))
         if resp.status >= 400:
             logging.error('HTTP {}'.format(resp.status))
+            logging.error('JSON {}'.format(await resp.json()))
             sys.exit(1)
         return resp
 
-    async def post(self, url, data=None):
+    async def post(self, url, data=None, json=None):
         """
         Shortcut for HTTP POST
         """
-        return await self.request('POST', url, data)
+        return await self.request('POST', url, data, json)
 
     async def get(self, url):
         """
         Shortcut for HTTP GET
         """
-        return await self.request('GET', url)
+        return await self.request('GET', url, data=None, json=None)
 
     async def login(self):
         """

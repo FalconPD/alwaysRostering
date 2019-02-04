@@ -32,19 +32,17 @@ if [ ${DBSIZE} -lt ${MINSIZE} ]; then
     exit 1
 fi
 
-# Create and upload MAP rosters
+# Create and start uploading MAP rosters
 run "python ./MAP/create_rosters.py ${GENESIS} MAP/rosters/${DATE} all"
 STANDARD="MAP/rosters/${DATE}_StandardRoster.csv"
 ADDITIONAL="MAP/rosters/${DATE}_AdditionalUsers.csv"
-run "python ./MAP/upload_rosters.py --standard ${STANDARD} --additional ${ADDITIONAL} --status"
+run "python ./MAP/upload_rosters.py --standard ${STANDARD} --status"
 
 # Sync Atlas user accounts
 run "python ./Atlas/sync_atlas.py ${GENESIS} ./Atlas/id_map.csv sync_users"
 
-#date >> ${LOG}
-#echo "=== Syncing Schoology ===" >> ${LOG}
-#python ./Schoology/sync_schoology.py ${GENESIS} >> ${LOG} 2>&1
-#
+# Sync Schoology
+run "python ./Schoology/sync_schoology.py ${GENESIS}"
 
-# Check on the status of the MAP import
-run "python ./MAP/upload_rosters.py --status"
+# Upload the Additional MAP users
+run "python ./MAP/upload_rosters.py --additional ${ADDITIONAL} --status"

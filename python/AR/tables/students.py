@@ -579,18 +579,41 @@ class Student(Base):
         return homeroom_name
 
     @property
+    def short_school_code(self):
+        """
+        A shorter, lowercase school code typically used elementary credentials
+        """
+        if self.current_school == 'MLS':
+            return 'ml'
+        if self.current_school == 'BBS':
+            return 'bb'
+        if self.current_school == 'BES':
+            return 'bs'
+        if self.current_school == 'WLS':
+            return 'wl'
+        if self.current_school == 'MTMS':
+            return 'ms'
+        if self.current_school == 'MTHS':
+            return 'hs'
+        if self.current_school == 'OTS':
+            return 'ot'
+        if self.current_school == 'AES':
+            return 'ag'
+        return None
+
+    @property
     def simple_username(self):
         """
         A simple(r) username for elementary students
         """
-        return self.current_school.lower() + self.student_id
+        return self.short_school_code + self.student_id
 
     @property
     def simple_password(self):
         """
         A simple password for elementary students
         """
-        return self.current_school.lower() + simple_credentials['student']
+        return self.short_school_code + simple_credentials['student']
 
     @property
     def academic_level(self):
