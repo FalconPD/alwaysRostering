@@ -567,7 +567,7 @@ class Student(Base):
     @property
     def homeroom_name(self):
         """
-        A prettier name to use for a students homeroom
+        A prettier name to use for a student's homeroom
         """
         last_names = []
         for teacher in self.homeroom_teachers:

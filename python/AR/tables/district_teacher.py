@@ -400,7 +400,7 @@ class DistrictTeacher(Base):
                         self.last_name + '%'),
                     DistrictTeacher.teacher_id!=self.teacher_id,
                 )
-                .one()
+                .one_or_none()
             )
             return teacher
         return self
@@ -409,7 +409,7 @@ class DistrictTeacher(Base):
     def shared_teachers(self):
         """
         If this is a shared teacher, this function returns a list of real,
-        shared teacher ids, otherwise it returns a list with it's own real id.
+        shared teacher ids, otherwise it returns a list with its own real id.
         """
         teachers = []
         if self.shared_teacher:
@@ -422,6 +422,29 @@ class DistrictTeacher(Base):
                         .filter(DistrictTeacher.teacher_id==teacher_id)
                         .one()
                     )
-                    teachers.append(teacher.real_teacher)
+                    real = teacher.real_teacher
+                    if real == None:
+                        logging.warning(f"{self} Shared teacher list contains non-real teacher")
+                    else:
+                        teachers.append(real)
             return teachers
-        return [self.real_teacher]
+        real = self.real_teacher
+        if real == None:
+            logging.warning(f"{self} shared_teachers called on non-real teacher")
+            return []
+        return [real]
+
+    @property
+    def title(self):
+        """
+        Returns a district employee's title based on their prefix_code. If
+        that's empty it will generate a warning and use their gender_code.
+        """
+        if self.prefix_code != "":
+            return self.prefix_code
+        else:
+            logging.warning(f"{self} is missing prefix_code")
+            if self.gender_code == 'M':
+                return "Mr."
+            else:
+                return "Ms."
