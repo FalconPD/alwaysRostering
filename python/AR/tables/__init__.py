@@ -4,6 +4,8 @@ from AR.tables.resident_district_tracking import ResidentDistrictTracking
 from AR.tables.student_elem_homeroom import StudentElementaryHomeroom
 from AR.tables.student_schedule import StudentSchedule
 from AR.tables.student_user_text import StudentUserText
+from AR.tables.lunch_tracking import LunchTrackingRecord
+from AR.tables.lunch_codes import LunchCode
 from AR.tables.students import Student
 from AR.tables.staff_employment_record import StaffEmploymentRecord
 from AR.tables.district_teacher import DistrictTeacher
@@ -30,4 +32,6 @@ sa_classes = [
     CourseSection,
     CourseSubsection,
     StaffEmploymentRecord,
+    LunchTrackingRecord,
+    LunchCode,
 ]

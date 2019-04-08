@@ -1,11 +1,13 @@
 from sqlalchemy import Column, Integer, String, Boolean, BigInteger, Date
 from sqlalchemy import DateTime, ForeignKeyConstraint
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, object_session
+from datetime import date
 import logging
 import re
 from sqlalchemy.orm import column_property
 from sqlalchemy import select, func
 from AR.tables import utils, Base, StudentUserText, ResidentDistrictTracking
+from AR.tables import LunchTrackingRecord, LunchCode
 from AR.credentials import simple_credentials
 
 class Student(Base):
@@ -343,7 +345,7 @@ class Student(Base):
     @classmethod
     def from_csv(cls, row):
         return cls(
-            ability_level = row[0],
+            ability_level                   = row[0],
             academically_disadvantaged      = utils.genesis_to_boolean(row[1]),
             academic_independent_program    = utils.genesis_to_boolean(row[2]),
             age                             = row[3],
@@ -647,6 +649,32 @@ class Student(Base):
         if self.grade_level == '12':
             return "12th Grade"
         return "Unknown"
+
+    @property
+    def free_or_reduced_lunch(self):
+        """
+        Determines if a student currently receives free or reduced lunch
+        """
+        tracking_records = (object_session(self).query(LunchTrackingRecord)
+            .filter(LunchTrackingRecord.school_year==self.school_year)
+            .filter(LunchTrackingRecord.student_id==self.student_id)
+        )
+        current_date = date.today()
+        for record in tracking_records:
+            # Students have to be within the start and end date (optional) of
+            # the record
+            if ((record.start_date <= current_date) and
+                (True if (record.end_date == None) else (record.end_date > current_date))):
+                # Lookup the lunch code for this year and make sure it is free
+                # or reduced
+                lunch_code = (object_session(self).query(LunchCode)
+                    .filter(LunchCode.code==record.lunch_code)
+                    .filter(LunchCode.school_year==record.school_year)
+                    .one()
+                )
+                if lunch_code.free or lunch_code.reduced:
+                    return True
+        return False
 
 #    @property
 #    def next_school(self):

@@ -162,10 +162,14 @@ def roster_screening():
         for teacher_id in proctors:
             teacher = (AR.staff()
                 .filter(DistrictTeacher.teacher_id==teacher_id)
-                .one()
+                .one_or_none()
             )
-            row = add_teacher_to_row(row, teacher)
-            standard_roster.writerow(row)
+            if teacher == None:
+                logging.warning(
+                    f"Screening proctor not found {teacher_id}")
+            else:
+                row = add_teacher_to_row(row, teacher)
+                standard_roster.writerow(row)
 
 def roster_412():
     """
