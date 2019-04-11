@@ -6,7 +6,7 @@ import logging
 import re
 from sqlalchemy.orm import column_property
 from sqlalchemy import select, func
-from AR.tables import utils, Base, StudentUserText, ResidentDistrictTracking
+from AR.tables import utils, Base, StudentUserText, ResidentDistrictTracking, ELLTracking
 from AR.tables import LunchTrackingRecord, LunchCode
 from AR.credentials import simple_credentials
 
@@ -186,7 +186,8 @@ class Student(Base):
         back_populates='homeroom_students')
     school = relationship('School', uselist=False, back_populates='students')
     resident_district_tracking = relationship('ResidentDistrictTracking',
-        uselist=False) 
+        uselist=False)
+    ell_tracking = relationship('ELLTracking', back_populates='student')
 
     report_code = '991016'
     csv_header = [
@@ -550,8 +551,11 @@ class Student(Base):
     @property
     def homeroom_teachers(self):
         """
-        Utility function to return a query of all homeroom teachers
+        Utility function to return a list of all homeroom teachers
         """
+        if self.homeroom == '':
+            logging.warning(f"{self}: No homeroom")
+            return [None]
         return self.homeroom_school_teacher.district_teacher.shared_teachers
 
     @property
@@ -571,6 +575,9 @@ class Student(Base):
         """
         A prettier name to use for a student's homeroom
         """
+        if self.homeroom == '':
+            logging.warning(f"{self}: No homeroom")
+            return ''
         last_names = []
         for teacher in self.homeroom_teachers:
             last_names.append(teacher.teacher_last_name)
@@ -674,6 +681,21 @@ class Student(Base):
                 )
                 if lunch_code.free or lunch_code.reduced:
                     return True
+        return False
+
+    @property
+    def ell(self):
+        """
+        Determines if a student is currently an ELL student
+        """
+        current_date = date.today()
+        for record in self.ell_tracking:
+            # Students have to be within the start and end date (optional) of
+            # the record and the 
+            if ((record.program_type == 'ESL') and
+                (record.start_date <= current_date) and
+                ((record.exit_date == None) or (record.exit_date > current_date))):
+                return True
         return False
 
 #    @property

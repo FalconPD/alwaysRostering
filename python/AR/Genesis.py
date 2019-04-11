@@ -16,7 +16,8 @@ baseURL = 'https://genesis.monroe.k12.nj.us/'
 credentials = json.load(open('../include/credentials.json'))
 
 async def fetch_db(db_file, loop):
-    """Perform all steps necessary to build a database while updating status.
+    """
+    Perform all steps necessary to build a database while updating status.
     """
     engine = create_engine('sqlite:///{}'.format(db_file))
     DBSession = sessionmaker(bind=engine)
@@ -32,7 +33,8 @@ async def fetch_db(db_file, loop):
         db_session.commit()
 
 async def get_table(session, cls, db_session):
-    """Runs a report, downloads the output, and imports it into the database.
+    """
+    Runs a report, downloads the output, and imports it into the database.
     """
     print('{}: running report'.format(cls.__tablename__))
     run_code = await start_report(session, cls)
@@ -51,7 +53,8 @@ async def get_table(session, cls, db_session):
             db_session.add(cls.from_csv(row))
 
 async def login(session):
-    """Login and get session cookie.
+    """
+    Login and get session cookie.
 
     Uses the username and password from credentials.json.
     """
@@ -72,7 +75,8 @@ async def login(session):
         assert resp.status == 200
 
 async def start_report(session, cls):
-    """Sends a post request to start generating a report immediately.
+    """
+    Sends a post request to start generating a report immediately.
     """
     url = baseURL + 'genesis/sis/view'
     params = {
@@ -106,7 +110,8 @@ async def start_report(session, cls):
     return params['runcode'][0]
 
 async def download(session, run_code):
-  """Downloads the text of our report
+  """
+  Downloads the text of our report
   """
   url = baseURL + 'genesis/sis/view'
   params = {
@@ -120,7 +125,8 @@ async def download(session, run_code):
     return await resp.text()
       
 async def get_status(session, run_code):
-  """Updates the status object with the results of an AJAX query.
+  """
+  Updates the status object with the results of an AJAX query.
   """
   url = baseURL + 'genesis/sis/view'
   params = {
