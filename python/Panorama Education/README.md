@@ -6,7 +6,7 @@ status, free and reduced lunch status, and TAG). Formatting follows the
 
 ## 3-5
 
-Students a linked to their homeroom teacher(s) with class name being the HR
+Students are linked to their homeroom teacher(s) with class name being the HR
 teacher(s) name(s).
 
 ## 6-12
@@ -18,7 +18,7 @@ and all students are rostered for each teacher. Classses that do not have a
 teacher, early out at MTHS, or classes that have a placeholder teacher, STAFF
 STAFF for lunches at MTMS, are not be rostered.
 
-## NOTES
+## Notes
 
 Homebound students without schedule information or homeroom teachers are still
 rostered with that information being left blank.
