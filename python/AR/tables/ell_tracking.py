@@ -88,7 +88,7 @@ class ELLTracking(Base):
             program_type = row[17],
             referral_date = utils.genesis_to_date(row[18]),
             start_date = utils.genesis_to_date(row[19]),
-            studentid = row[20],
+            student_id = row[20],
         )
 
     def __repr__(self):
