@@ -18,6 +18,7 @@ from AR.tables.master_class_schedule import CourseSection
 from AR.tables.school_curriculum import CurriculumCourse
 from AR.tables.master_class_subsections import CourseSubsection
 from AR.tables.school_attendance_cycle import SchoolAttendanceCycle
+from AR.tables.next_year_assignment import NextYearAssignment
 
 sa_classes = [
     ResidentDistrictTracking,
@@ -38,4 +39,5 @@ sa_classes = [
     LunchCode,
     ELLTracking,
     SchoolAttendanceCycle,
+    NextYearAssignment,
 ]

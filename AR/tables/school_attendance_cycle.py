@@ -82,7 +82,7 @@ class SchoolAttendanceCycle(Base):
     def __repr__(self):
         return (
             f"SchoolAttendanceCycle "
-            f"school_year={self.school_code} "
+            f"school_year={self.school_year} "
             f"school_code={self.school_code} "
             f"code={self.code}"
         )

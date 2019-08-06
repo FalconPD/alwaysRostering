@@ -1,11 +1,16 @@
 [[source]]
-url = "https://pypi.org/simple"
+url = "https://pypi.python.org/simple"
 verify_ssl = true
 name = "pypi"
 
 [packages]
+sqlalchemy = "*"
+aiohttp = "*"
+click = "*"
+"beautifulsoup4" = "*"
+selenium = "*"
+multidict = "*"
+openpyxl = "*"
+xlrd = "*"
 
 [dev-packages]
-
-[requires]
-python_version = "3.6"

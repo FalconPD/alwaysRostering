@@ -11,9 +11,9 @@ import csv
 import io
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+import AR.credentials as credentials
 
 baseURL = 'https://genesis.monroe.k12.nj.us/'
-credentials = json.load(open('../include/credentials.json'))
 
 async def fetch_db(db_file, loop):
     """
@@ -55,11 +55,9 @@ async def get_table(session, cls, db_session):
 async def login(session):
     """
     Login and get session cookie.
-
-    Uses the username and password from credentials.json.
     """
-    username = credentials['genesis']['username']
-    password = credentials['genesis']['password']
+    username = credentials.genesis['username']
+    password = credentials.genesis['password']
     url = baseURL + 'genesis/sis/view'
     postURL = baseURL + 'genesis/sis/j_security_check'
     data = {

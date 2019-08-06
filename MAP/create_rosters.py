@@ -128,29 +128,7 @@ def roster_screening():
         )
     )
     for student in students:
-        # If a preregistrant has resident_district_tracking, use it to figure
-        # out what school they are going in to. If not, use home_school in
-        # Student. Otherwise, skip.
-        if student.resident_district_tracking:
-            code = student.resident_district_tracking.resident_school_code
-            if code == '010':
-                school_code = 'BBS'
-            elif code == '040':
-                school_code = 'MLS'
-            elif code == '060':
-                school_code = 'OTS'
-            else:
-                logging.warning("Can't map {} to school_code for {}".format(
-                    code, student))
-        else:
-            logging.warning(
-                "No entry in Resident District Tracking for {}".format(student))
-            if student.home_school:
-                school_code = student.home_school
-            else:
-                logging.warning(
-                    "home_school not set for {}, skipping".format(student))
-                continue
+        school_code = student.next_year_assignment.school_code
         proctors = constants.SCREENING_PROCTORS[school_code]
         school = AR.schools().filter(School.school_code==school_code).one()
         row = {

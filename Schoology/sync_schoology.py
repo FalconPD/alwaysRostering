@@ -290,7 +290,7 @@ async def sync(loop, db_file):
     """
     AR.init(db_file)
 
-    async with schoology.Session() as Schoology:
+    async with schoology.Session("production") as Schoology:
         await add_update_buildings(loop, Schoology)
         (students, teachers, admins, sysadmins, all_ids) = create_user_queries()
         await add_update_users(loop, students, teachers, admins, sysadmins,

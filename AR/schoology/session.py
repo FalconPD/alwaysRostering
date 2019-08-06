@@ -13,6 +13,7 @@ from AR.schoology.users import Users
 from AR.schoology.courses import Courses
 from AR.schoology.enrollments import Enrollments
 from AR.schoology.course_sections import CourseSections
+import AR.credentials as credentials
 
 class Session():
     """
@@ -20,7 +21,9 @@ class Session():
     management
     """
     sem = asyncio.Semaphore(constants.HTTP_MAX_REQUESTS)
-    credentials = json.load(open(constants.CREDENTIALS_PATH))
+
+    def __init__(self, env):
+        self.credentials = credentials.schoology[env]    
 
     async def __aenter__(self):
         """
@@ -50,21 +53,21 @@ class Session():
             "Authorization":
                 'OAuth ' +
                 'realm="Schoology API",' +
-                'oauth_consumer_key="' + self.credentials["schoology"]["oauth_consumer_key"] + '",' +
+                'oauth_consumer_key="' + self.credentials['consumer_key'] + '",' +
                 'oauth_token="",' +
                 'oauth_nonce="' + uuid.uuid4().hex + '",' +
                 'oauth_timestamp="' + str(int(time.time())) + '",' +
                 'oauth_signature_method="PLAINTEXT",' +
                 'oauth_version="1.0",' +
-                'oauth_signature="' + self.credentials["schoology"]["oauth_signature"] + '%26"'
+                'oauth_signature="' + self.credentials['consumer_secret'] + '%26"'
         }
 
     async def request(self, method, endpoint, json=None, params=None):
         """
         Perform a HTTP request with throttling, error checking, and retries
         """
-        # Add the BASE_URL if needed
-        url = endpoint if endpoint.startswith(constants.BASE_URL) else (constants.BASE_URL + endpoint)
+        # Add the base_url if needed
+        url = endpoint if endpoint.startswith(self.credentials['base_url']) else (self.credentials['base_url'] + endpoint)
       
         # Retry loop
         retries = 0

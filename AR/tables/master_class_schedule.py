@@ -271,6 +271,17 @@ class CourseSection(Base):
         return None
 
     @property
+    def semester(self):
+        """
+        Gets the semester from the first subsection
+        """
+        if self.first_subsection != None:
+            if self.first_subsection.semester != '':
+                return self.first_subsection.semester
+        logging.warning(f"{self}: Unable to lookup semester")
+        return None
+
+    @property
     def name(self):
         """
         Returns a friendly name for the course section depending on your

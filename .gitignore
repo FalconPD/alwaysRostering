@@ -10,10 +10,11 @@ __pycache__/
 *.db
 output.txt
 geckodriver.log
-python/PG/*.json
-python/databases/*
-python/logs/*
+PG/*.json
+databases/*
+logs/*
 rostering.conf
 credentials.py
 *.log
 .env
+tags

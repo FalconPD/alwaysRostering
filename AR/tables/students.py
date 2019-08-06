@@ -188,6 +188,8 @@ class Student(Base):
     resident_district_tracking = relationship('ResidentDistrictTracking',
         uselist=False)
     ell_tracking = relationship('ELLTracking', back_populates='student')
+    next_year_assignment = relationship('NextYearAssignment',
+        back_populates='student', uselist=False)
 
     report_code = '991016'
     csv_header = [
