@@ -20,7 +20,7 @@ This directory contains scripts for working with the
 
 This scripts is used as a cronjob on a Linux VM to keep certain services in-sync with Genesis nightly.
 
-## [Education City](https://github.com/FalconPD/alwaysRostering/tree/master/Education City) - Work in Progress
+## [Education City](https://github.com/FalconPD/alwaysRostering/tree/master/Education%20City) - Work in Progress
 
 This directory contains the beginnings of a script for syncing
 [Education City](https://ec2.educationcity.com) accounts. 
@@ -37,7 +37,7 @@ such that only one session can be active at a time from non-internal IPs.
 
 Scripts for working with rosters in [NWEA MAP](https://teach.mapnwea.org)
 
-## [Panorama Education](https://github.com/FalconPD/alwaysRostering/tree/master/Panorama Education)
+## [Panorama Education](https://github.com/FalconPD/alwaysRostering/tree/master/Panorama%20Education)
 
 Scripts to create rosters for SEL surveys.
 
