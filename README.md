@@ -25,7 +25,7 @@ This scripts is used as a cronjob on a Linux VM to keep certain services in-sync
 This directory contains the beginnings of a script for syncing
 [Education City](https://ec2.educationcity.com) accounts. 
 
-## Genesis
+## [Genesis](https://github.com/FalconPD/alwaysRostering/tree/master/Genesis)
 
 ### make_db.py
 
@@ -33,6 +33,7 @@ This script uses the AR Genesis module to create a database of the information
 currently on Genesis. It runs reports on Genesis and stores the output in an
 sqlite3 file. Reports are run asynchronously, although Genesis is configured
 such that only one session can be active at a time from non-internal IPs.
+
 ## [MAP](https://github.com/FalconPD/alwaysRostering/tree/master/MAP)
 
 Scripts for working with rosters in [NWEA MAP](https://teach.mapnwea.org)
@@ -45,7 +46,18 @@ Scripts to create rosters for SEL surveys.
 
 Scripts for pulling information from Frontline Professional Growth (formerly MyLearningPlan). 
 
-## Schoology/sync_schoology.py
+## [Schoology](https://github.com/FalconPD/alwaysRostering/tree/master/Schoology)
+
+### [considerations.md](Schoology/considerations.md)
+
+Special issues to keep in mind when working with Genesis and Schoology
+
+### grading_periods.py 
+
+Attempts to sync grading periods in Schoology with Genesis. If the latest
+grading periods are not available, it uses the dates of the previous year.
+
+### sync_schoology.py
 
 This script automatically syncs buildings, users, courses, and enrollments with
 [Schoology](https://monroetownship.schoology.com).
