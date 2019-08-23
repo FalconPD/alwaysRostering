@@ -24,7 +24,7 @@ async def fetch_db(db_file, loop):
     db_session = DBSession()
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
-    
+
     async with aiohttp.ClientSession(loop=loop) as session:
         print('Logging in to Genesis')
         await login(session=session)
@@ -121,7 +121,7 @@ async def download(session, run_code):
   }
   async with session.get(url, params=params) as resp:
     return await resp.text()
-      
+
 async def get_status(session, run_code):
   """
   Updates the status object with the results of an AJAX query.

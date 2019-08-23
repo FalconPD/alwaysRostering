@@ -9,6 +9,9 @@ methods support operations that were difficult in the Genesis ReportWriter
 system, including querying based on [roles](docs/roles.md) and classes, combining
 co-teacher rosters, and tracking teachers that are away on leave.
 
+Everything is in a `pipenv`, execute `pipenv shell` and set PYTHONPATH
+accordingly to run the scripts.
+
 In this directory you will find the following subdirectories and scripts:
 
 ## [Atlas](https://github.com/FalconPD/alwaysRostering/tree/master/Atlas)

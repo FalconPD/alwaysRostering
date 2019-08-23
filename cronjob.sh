@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export PYTHONPATH="/home/ryan/alwaysRostering/python"
+export PYTHONPATH="/home/ryan/alwaysRostering"
 
 DATE=`date -I`
 GENESIS="databases/${DATE}-genesis.db"

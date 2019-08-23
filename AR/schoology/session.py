@@ -68,14 +68,14 @@ class Session():
         """
         # Add the base_url if needed
         url = endpoint if endpoint.startswith(self.credentials['base_url']) else (self.credentials['base_url'] + endpoint)
-      
+
         # Retry loop
         retries = 0
         while True:
             # Get a semaphore and perform the request
             async with self.sem:
                 resp = await self.session.request(method, url, params=params, json=json,
-                headers=self.create_header())
+                                                  headers=self.create_header())
 
                 logging.debug('HTTP {} {} params={} json={}'.format(method, url, params,
                     json))
@@ -123,7 +123,7 @@ class Session():
         """
         Shortcut for HTTP PUT
         """
-        return await self.request('PUT', endpoint, params=params, json=json) 
+        return await self.request('PUT', endpoint, params=params, json=json)
 
     async def post(self, endpoint, params=None, json=None):
         """
@@ -146,4 +146,4 @@ class Session():
             resp = await self.get(next_link)
             json_response = await(resp.json())
             yield json_response
-            next_link = json_response['links']['next'] if ('next' in json_response['links']) else None 
+            next_link = json_response['links']['next'] if ('next' in json_response['links']) else None

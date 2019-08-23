@@ -19,10 +19,10 @@ teacher_job_codes = [
     '1015', # English/Elementary
     '1017', # Science/Elementary
     '1018', # Social Studies/Elementary
-    '1102',
-    '1103',
-    '1104',
-    '1106',
+    '1102', # Mathematics Grades 5-8
+    '1103', # Science Grades 5-8
+    '1104', # Social Studies Grades 5-8
+    '1106', # Language Arts / Literacy Grades 5-8
     '1150',
     '1200',
     '1273',
@@ -109,8 +109,8 @@ edservices_job_codes = [
     '3117', # Social Worker
     '3118', # LDTC
     '3119', # Reading Specialist
-    '3120', # Speech 
-    '3121', # Coordinator Substance Abuse 
+    '3120', # Speech
+    '3121', # Coordinator Substance Abuse
     '3125', # Teacher / Behavior Specialist (SE only)
 ]
 nurse_job_codes = [
@@ -393,4 +393,14 @@ def teacher_by_name(first_name, last_name):
         .filter(func.lower(DistrictTeacher.teacher_first_name)==first_name.lower())
         .filter(func.lower(DistrictTeacher.teacher_last_name)==last_name.lower())
         .first()
+    )
+
+def student_by_id(student_id):
+    """
+    Returns a Student object that matches a given student_id
+    """
+    return (
+        db_session.query(Student)
+        .filter(Student.student_id==student_id)
+        .one()
     )

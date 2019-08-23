@@ -107,7 +107,7 @@ async def delete_users(loop, all_ids, Schoology):
         async for page in Users.list():
             for user in page:
                 if user['school_uid'] not in all_ids:
-                    if (user['name_first'] == 'Amy' and 
+                    if (user['name_first'] == 'Amy' and
                         user['name_last'] == 'Bennett'):
                         print(f"Explicitly allowing Unknown ID {user['id']} "
                             f"{user['name_first']} {user['name_last']} "

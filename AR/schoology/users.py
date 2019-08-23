@@ -6,12 +6,13 @@ class Users(AddDel):
     """
     async def list(self):
         """
-        Returns a lists of users one page at a time.
+        Returns a lists of users one page at a time. This bumps up the page size
+        to perform faster.
         """
-        async for json_response in self.session.list_pages('users'):
-            yield json_response['user'] 
+        async for json_response in self.session.list_pages('users?start=0&limit=200'):
+            yield json_response['user']
 
-    async def add_update(self, school_uid, name_first, name_last, email, role):
+    async def add_update(self, school_uid, name_first, name_last, email, role, advisor_uids=''):
         """
         Makes a user object, adds it to the queue, and if the queue is at
         the chunk_size it sends out a request to add that block of users
@@ -22,7 +23,8 @@ class Users(AddDel):
             'name_last': name_last,
             'primary_email': email,
             'role_id': self.session.Roles.lookup_id(role),
-            'synced': 1
+            'advisor_uids': advisor_uids,
+            'synced': 1,
         }
 
         await self.adds.add(user)
@@ -56,3 +58,17 @@ class Users(AddDel):
             'email_notification': '0'
         }
         await self.session.delete('users', params=params)
+
+    async def csvexport(self, fields):
+        """
+        Bulk downloads Schoology users in CSV format. The following fields are
+        supported: uid, school_uid, building_nid, name_title, name_first,
+        name_first_preferred, name_middle, name_last, role_name, name, mail,
+        position, grad_year, birthday, gender, bio, subjects_taught,
+        grades_taught, phone, address, website, interests, activities
+        """
+        params = {
+            'fields': ",".join(fields)
+        }
+        resp = await self.session.get('csvexport/users', params=params)
+        return await resp.text()

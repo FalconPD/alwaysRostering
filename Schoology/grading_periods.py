@@ -37,7 +37,7 @@ def main(environment, debug, db_file, school_year):
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(sync(environment, school_year))
-    loop.close()    
+    loop.close()
 
 def attendance_cycle(code, school_code, school_year):
     """

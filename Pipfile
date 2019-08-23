@@ -12,5 +12,6 @@ selenium = "*"
 multidict = "*"
 openpyxl = "*"
 xlrd = "*"
+brotlipy = "*"
 
 [dev-packages]
