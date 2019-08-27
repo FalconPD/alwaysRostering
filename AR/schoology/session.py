@@ -23,7 +23,7 @@ class Session():
     sem = asyncio.Semaphore(constants.HTTP_MAX_REQUESTS)
 
     def __init__(self, env):
-        self.credentials = credentials.schoology[env]    
+        self.credentials = credentials.schoology[env]
 
     async def __aenter__(self):
         """

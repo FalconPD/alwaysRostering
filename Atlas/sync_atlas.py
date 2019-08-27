@@ -10,7 +10,7 @@ from AR.atlas.user import User
 
 async def sync_users():
     """
-    Makes sure Genesis users and Atlas users are in sync    
+    Makes sure Genesis users and Atlas users are in sync
     """
     current_users = {}
 
@@ -52,7 +52,7 @@ async def sync_users():
         atlas_id = Atlas.id_map.get_atlas(teacher.teacher_id)
         user = current_users[atlas_id]
         user.privileges.append('All-level editing privileges')
-        
+
     # Check for differences between current_users and what's in Atlas
     tasks = []
     for atlas_id, atlas_user in Atlas.users.items():
@@ -74,7 +74,7 @@ async def sync_users():
     await asyncio.gather(*tasks)
 
     return
-        
+
 def create_map():
     """
     Perform a CASE INSENSITIVE search based on first_name and last_name for all
@@ -125,7 +125,7 @@ def cli(db_file, map_file, debug):
 
     # Create a new Atlas session (designed for an async with)
     Atlas = loop.run_until_complete(atlas.Session().__aenter__(map_file))
-        
+
 @cli.command(name="create_map")
 def cli_create_map():
     """
@@ -145,6 +145,6 @@ def cli_close(result, **kwargs):
     # Close down the Atlas session (designed for an async with)
     loop.run_until_complete(Atlas.__aexit__())
     loop.close()
-    
+
 if __name__ == '__main__':
     cli()

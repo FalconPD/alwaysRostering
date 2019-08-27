@@ -2,13 +2,14 @@ import json
 import re
 import urllib.parse as urlparse
 from bs4 import BeautifulSoup
+import AR.credentials as credentials
 
 from AR.atlas import constants
 
 class LoginMixin():
     """
     This mixin contains the function for logging into Atlas
-    """    
+    """
     async def login(self):
         """
         Logs into Atlas
@@ -28,10 +29,9 @@ class LoginMixin():
         5. POST SAMLResponse to action URL of the form. This sets the
         SimpleSAMLAuthToken cookie and returns a redirect.
         """
-        credentials = json.load(open(constants.CREDENTIALS_PATH))
         data = {
-            'email': credentials['atlas']['email'],
-            'password': credentials['atlas']['password'],
+            'email': credentials.atlas['email'],
+            'password': credentials.atlas['password'],
         }
         await self.post('https://authenticate.rubicon.com/api/auth', json=data)
 
