@@ -78,7 +78,7 @@ def create_user_queries():
     teachers = teachers.except_(admins)
     teachers = teachers.except_(sysadmins)
     admins = admins.except_(sysadmins)
-   
+
     # Make sure there is no overlap between staff and student IDs
     student_ids = { student.student_id for student in students }
     staff_ids = { staff.teacher_id for staff in

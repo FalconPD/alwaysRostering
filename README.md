@@ -51,16 +51,5 @@ Scripts for pulling information from Frontline Professional Growth (formerly MyL
 
 ## [Schoology](https://github.com/FalconPD/alwaysRostering/tree/master/Schoology)
 
-### [considerations.md](Schoology/considerations.md)
-
-Special issues to keep in mind when working with Genesis and Schoology
-
-### grading_periods.py 
-
-Attempts to sync grading periods in Schoology with Genesis. If the latest
-grading periods are not available, it uses the dates of the previous year.
-
-### sync_schoology.py
-
-This script automatically syncs buildings, users, courses, and enrollments with
-[Schoology](https://monroetownship.schoology.com).
+Scripts for syncing Genesis with the
+[Schoology](https://monroetownship.schoology.com) learning management system.

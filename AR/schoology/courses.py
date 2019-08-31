@@ -22,9 +22,8 @@ class Courses(AddDel):
             course['sections']['section'].append({
                 'title': section['title'],
                 'section_school_code': section['section_school_code'],
-                'grading_periods': [589077], #TODO: Setup and pull grading periods
-                                             #from SchoolAttendanceCycle in Genesis
-                'synced': 1
+                'grading_periods': section['grading_periods'],
+                'synced': 1,
             })
 
         await self.adds.add(course)
