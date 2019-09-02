@@ -1,14 +1,20 @@
+"""
+Syncs user accounts with Schoology
+"""
+
+# System-wide imports
 import logging
 import asyncio
+import sys
+import click
+import csv
+
+# alwaysRostering imports
 import AR.AR as AR
 import AR.schoology as schoology
-import click
-import pprint
-import sys
-import csv
-from AR.tables import DistrictTeacher, Student
 
-pp=pprint.PrettyPrinter()
+# Schoology specific imports
+import utils
 
 @click.command()
 @click.argument('db_file', type=click.Path(exists=True), metavar='DB_FILE')
@@ -30,19 +36,6 @@ def main(db_file, environment, debug, force):
 
     loop.run_until_complete(sync(loop, db_file, environment, force))
     loop.close()
-
-async def create_task(tasks, loop, function):
-    """
-    Wrapper to make a task, start a task, and print status
-    """
-
-    tasks.append(
-        loop.create_task(function)
-    )
-    await asyncio.sleep(0) # give the task a chance to start
-    if len(tasks) % 500 == 0:
-        print('{} tasks created'.format(len(tasks)))
-    return tasks
 
 def create_user_sets():
     """
@@ -127,8 +120,7 @@ async def sync(loop, db_file, environment, force):
 
             # Perform deletes
             for genesis_id in deletes:
-                tasks = await create_task(tasks, loop,
-                    Users.delete(schoology_users[genesis_id]))
+                tasks.append(Users.delete(schoology_users[genesis_id]))
 
             # Perform adds / updates
             for role, ids in user_sets.items():
@@ -144,7 +136,7 @@ async def sync(loop, db_file, environment, force):
                                                 "Schoology.")
                             else:
                                 advisor_uids = schoology_users[student.counselor_id]
-                        tasks = await create_task(tasks, loop,
+                        tasks.append(
                             Users.add_update(
                                 school_uid=student.student_id,
                                 name_first=student.first_name,
@@ -157,7 +149,7 @@ async def sync(loop, db_file, environment, force):
                 elif role != 'All':
                     for genesis_id in ids:
                         teacher = AR.teacher_by_id(genesis_id)
-                        tasks = await create_task(tasks, loop,
+                        tasks.append(
                             Users.add_update(
                                 school_uid=teacher.teacher_id,
                                 name_first=teacher.first_name,
@@ -166,7 +158,7 @@ async def sync(loop, db_file, environment, force):
                                 role=role
                             )
                         )
-            await asyncio.gather(*tasks)
+            await utils.task_monitor(tasks, 30)
 
 if __name__ == '__main__':
     main()

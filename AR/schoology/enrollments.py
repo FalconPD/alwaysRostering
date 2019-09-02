@@ -62,8 +62,9 @@ class Enrollments():
 
     async def list(self, section_id):
         """
-        lists all the course enrollment data for a section from Schoology
+        Lists all the course enrollment data for a section from Schoology. Also
+        bumps up the page size to perform faster.
         """
-        endpoint = 'section/' + str(section_id) + '/enrollments'
+        endpoint = 'section/' + str(section_id) + '/enrollments?start=0&limit=200'
         async for response in self.session.list_pages(endpoint):
             yield response['enrollment']

@@ -1,14 +1,14 @@
-# System imports
+# In our python environment
 import logging
 import asyncio
 import click
 import sys
 
-# alwaysRostering imports
+# In the alwaysRostering environment
 import AR.AR as AR
 import AR.schoology as schoology
 
-# Schoology script imports
+# Local
 import utils
 
 @click.command()
@@ -17,7 +17,7 @@ import utils
 @click.option('-d', '--debug', is_flag=True, help="Print debugging statements")
 def main(db_file, environment, debug):
     """
-    Syncs up Schoology buildings with a Genesis Database
+    Adds Schoology enrollments based on sections in a Genesis Database
 
     DB_FILE - A sqlite3 file of the Genesis database
     """
@@ -33,29 +33,28 @@ def main(db_file, environment, debug):
 
 async def sync(loop, db_file, environment):
     """
-    Performs all steps to sync Schoology buildings
-
-    NOTE: Genesis uses the term 'schools' to refer to the individual
-    buildings, Schoology uses buildings. In Schoology there is one school,
-    'Monroe Township Schools' and currently 8 buildings (AES, BBS, BES, etc.)
+    Performs all steps to perform Schoology enrollments
     """
     print(f"Loading {db_file}...")
     AR.init(db_file)
     async with schoology.Session(environment) as Schoology:
-        print("Syncing buildings with Schoology...")
-        async with Schoology.Buildings as Buildings:
-            tasks=[]
-            for building in AR.schools():
+        async with Schoology.Enrollments as Enrollments:
+            len_sections = AR.sections().count()
+            print(f"Enrolling students and teachers in {len_sections} sections...")
+            tasks = []
+            for section in AR.sections():
+                # enroll the teacher
+                section_school_code = section.section_school_code
+                teacher_id = section.first_subsection.teacher_id
                 tasks.append(
-                    Buildings.add_update(
-                        title=building.school_name,
-                        building_code=building.building_code,
-                        address1=building.school_address1,
-                        address2=building.school_address2,
-                        phone=building.school_office_phone,
-                        website=building.school_url
-                    )
+                    Enrollments.add(section_school_code, teacher_id, admin=True)
                 )
+            # enroll the students
+                for student in section.active_students:
+                    student_id = student.student_id
+                    tasks.append(
+                        Enrollments.add(section_school_code, student_id)
+                    )
             await utils.task_monitor(tasks, 30)
 
 if __name__ == '__main__':

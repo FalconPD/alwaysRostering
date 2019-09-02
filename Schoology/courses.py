@@ -1,14 +1,19 @@
+"""
+Syncs up Schoology courses
+"""
+
+# System
 import logging
 import asyncio
+import click
+import sys
+
+# alwaysRostering
 import AR.AR as AR
 import AR.schoology as schoology
-import click
-import pprint
-import sys
-import csv
-from AR.tables import DistrictTeacher, Student
 
-pp=pprint.PrettyPrinter()
+# Schoology scripts
+import utils
 
 @click.command()
 @click.argument('db_file', type=click.Path(exists=True), metavar='DB_FILE')
@@ -68,12 +73,9 @@ async def sync(loop, db_file, environment):
                             'grading_periods': grading_period_id,
                         })
                 tasks.append(
-                    loop.create_task(
-                        Courses.add_update(building_code, title, course_code, sections)
-                    )
+                    Courses.add_update(building_code, title, course_code, sections)
                 )
-                await asyncio.sleep(0) # give the task a chance to start
-            await asyncio.gather(*tasks)
+            await utils.task_monitor(tasks)
 
 if __name__ == '__main__':
     main()

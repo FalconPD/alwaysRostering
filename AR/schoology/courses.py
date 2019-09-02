@@ -48,7 +48,7 @@ class Courses(AddDel):
         Lists all the courses. You can optionally specify a building
         """
         # couldnt' figure out a nice, clean way to do this with the params argument
-        endpoint = 'courses' 
+        endpoint = 'courses'
         if building_code:
             building_id = lookup_building_id(building_code)
             endpoint += '?building_id=' + str(building_id)
