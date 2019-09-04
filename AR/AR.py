@@ -1,11 +1,21 @@
+"""
+Base module for the alwaysRostering system
+"""
+
+# System
 import logging
-from AR.tables import Base, Student, DistrictTeacher, StaffJobRole, School
-from AR.tables import CurriculumCourse, CourseSection, StaffEmploymentRecord
+import json
+import re
+from datetime import date
+
+# Sqlalchemy
 from sqlalchemy.sql.expression import func
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-import json
-import re
+
+# alwaysRostering
+from AR.tables import Base, Student, DistrictTeacher, StaffJobRole, School
+from AR.tables import CurriculumCourse, CourseSection, StaffEmploymentRecord
 
 grade_levels       = ['KH', 'KF', '01', '02', '03', '04', '05', '06', '07',
                       '08', '09', '10', '11', '12']
@@ -352,10 +362,19 @@ def schools():
 def courses():
     """
     Returns a query of active courses with sections that have at least one
-    student in them. DOES NOT include Homeroom courses
+    student in them in the current school year. DOES NOT include Homeroom
+    courses
     """
+    current_date = date.today()
+    if current_date.month > 6: # Jul, Aug, Sep, Oct, Nov, Dec
+        start_year = current_date.year
+    else:                      # Jan, Feb, Mar, Apr, May, Jun
+        start_year = current_date.year - 1
+    ending = (start_year + 1) % 100 # last two digits of end_date
+    school_year = f"{start_year}-{ending}"
     return (
         db_session.query(CurriculumCourse)
+        .filter(CurriculumCourse.school_year == school_year)
         .filter(CurriculumCourse.course_code != '000')
         .filter(CurriculumCourse.course_active == True)
         .filter(CurriculumCourse.school_code.in_(school_codes))

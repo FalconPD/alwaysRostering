@@ -50,7 +50,7 @@ SCHOOL_COURSE_CODES = {
         '150', # Mathematics
         '159', # Accelerated Math
         '201', # Wilson Reading
-        '240', # English Language Arts 
+        '240', # English Language Arts
         '250', # English Language Arts
     ),
     'BES': (
@@ -174,7 +174,7 @@ SCHOOL_COURSE_CODES = {
         '180', # Mathematics - Eight Grade
         '260', # Language Arts - Sixth Grade
         '270', # Language Arts - Seventh Grade
-        '280', # Langauge Arts - Eight Grade 
+        '280', # Langauge Arts - Eight Grade
     ),
     'WES': (
         '140', # Mathematics
@@ -192,72 +192,7 @@ SCREENING_PROCTORS = {
 }
 
 EXTRA_CLASSES = {
-    'OT (Unrostered in Genesis)': {
-        'teacher_id': '586',
-        'student_ids': ('92170', '89897', '89900', '91303', '92518')
-    }, 
-    'ELA (Unrostered in Genesis)': {
-        'teacher_id': '603',
-        'student_ids': ('89662', '92433', '91570', '91931', '90638')
-    },
-    'Math (Unrostered in Genesis)': {
-        'teacher_id': '603',
-        'student_ids': ('89662', '92433', '91570', '90638', '89695')
-    },
-    'LAL Resource (Unrostered in Genesis)': {
-        'teacher_id': '5929',
-        'student_ids': ('89829', '91235', '90448', '89848', '90407', '88264')
-    },
-    'Kindergarten (Unrostered in Genesis)': {
-        'teacher_id': '5076',
-        'student_ids': ('92682', '92654', '92720', '93418', '92633', '91141',
-            '92668')
-    },
-    'First Grade (Unrostered in Genesis)': {
-        'teacher_id': '5076',
-        'student_ids': ('92517', '93050', '93091', '91844', '92292', '93245',
-            '93462', '92984', '91786', '91790', '91879', '91757', '92445',
-            '91861', '93116', '91802', '92225', '91858', '93452')
-    },
-    'Second Grade (Unrostered in Genesis)': {
-        'teacher_id': '5076',
-        'student_ids': ('90826', '92959', '93389', '92150', '91635', '92377',
-            '91079', '92868', '92578', '90787', '91384', '93331')
-    },
-    'BS BB (Unrostered in Genesis)': {
-        'teacher_id': '611',
-        'student_ids': ('92367', '92372', '93411', '92258', '91934', '91992',
-            '92978', '92009', '91925', '91893', '89661', '93376', '90955',
-            '90876', '91480', '90866', '91062')
-    },
-    'AP (Unrostered in Genesis)': {
-        'teacher_id': '609',
-        'student_ids': ('89694', '89697', '90636', '90783', '91289')
-    },
-    '1st Grade Resource (Unrostered in Genesis)': {
-        'teacher_id': '542',
-        'student_ids': ('91828', '90677', '92519', '91831')
-    },
-    'BB ML (Unrostered in Genesis)': {
-        'teacher_id': '5030',
-        'student_ids': ('91930', '93109', '91954', '91994', '92192', '92456',
-            '92435', '93024', '93030', '91903', '93287', '90954', '91522',
-            '90885', '93057', '92057', '92042', '92134', '91923', '90420')
-    },
-    'BB Additional Fluency': {
-        'teacher_id': '6265',
-        'student_ids': ('90681', '91659', '89718', '92202'),
-    },
 }
 
 DUPLICATES = {
-    '8204': ('6843',),
-    '6621': ('6309',),
-    '6662': ('6309',),
-    '6655': ('6309',),
-    '6539': ('569',),
-    '6314': ('569',),
-    '5731': ('542', '6309'),
-    '6030': ('8122',),
-    '6950': ('6309',),
 }

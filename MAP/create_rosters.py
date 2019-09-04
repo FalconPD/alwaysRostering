@@ -80,23 +80,24 @@ def roster_k3():
         students.count()))
     for student in students:
         for teacher in student.homeroom_teachers:
-            row = add_school_to_row({}, student.school)
-            row['Class Name'] = 'Homeroom ' + student.homeroom_suffix
-            row = add_teacher_to_row(row, teacher)
-            row = add_student_to_row(row, student)
-            standard_roster.writerow(row)
-            if teacher.teacher_id in constants.DUPLICATES:
-                row['Class Name'] += ' ' + teacher.teacher_last_name
-                for additional_teacher_id in constants.DUPLICATES[teacher.teacher_id]:
-                    additional_teacher = (AR.teachers()
-                        .filter(DistrictTeacher.teacher_id==additional_teacher_id)
-                        .one()
-                    )
-                    row = add_teacher_to_row(row, additional_teacher)
-                    standard_roster.writerow(row)
+            if teacher != None:
+                row = add_school_to_row({}, student.school)
+                row['Class Name'] = 'Homeroom ' + student.homeroom_suffix
+                row = add_teacher_to_row(row, teacher)
+                row = add_student_to_row(row, student)
+                standard_roster.writerow(row)
+                if teacher.teacher_id in constants.DUPLICATES:
+                    row['Class Name'] += ' ' + teacher.teacher_last_name
+                    for additional_teacher_id in constants.DUPLICATES[teacher.teacher_id]:
+                        additional_teacher = (AR.teachers()
+                            .filter(DistrictTeacher.teacher_id==additional_teacher_id)
+                            .one()
+                        )
+                        row = add_teacher_to_row(row, additional_teacher)
+                        standard_roster.writerow(row)
 
     print("Rostering K-3 classes that aren't in Genesis...")
-    for class_name, class_info in constants.EXTRA_CLASSES.items(): 
+    for class_name, class_info in constants.EXTRA_CLASSES.items():
         teacher =  (AR.db_session.query(DistrictTeacher)
             .filter(DistrictTeacher.teacher_id==class_info['teacher_id'])
             .one()

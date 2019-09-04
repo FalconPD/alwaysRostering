@@ -183,7 +183,7 @@ class CourseSection(Base):
             transcript_description      = row[47],
             use_in_parcc                = utils.genesis_to_boolean(row[48])
         )
-    
+
     @property
     def first_active_gb_teacher_section(self):
         """
@@ -301,8 +301,8 @@ class CourseSection(Base):
         """
         Returns an identifier unique across the whole district. Merged
         courses should get the same result.
-        
-        Format: <School Code> [(<Course Code 1>, <Course Section 1>), ...]
+
+        Format: <School Year> <School Code> <Semester> [(<Course Code 1>, <Course Section 1>), ...]
         """
         course_sections = ['({}, {})'.format(
             self.course_code,
@@ -315,8 +315,10 @@ class CourseSection(Base):
                     merged_section.course_section
                 ))
 
-        return '{} {}'.format(
-            self.school_code, 
+        return '{} {} {} {}'.format(
+            self.school_year,
+            self.school_code,
+            self.semester,
             ', '.join(sorted(course_sections))
         )
 

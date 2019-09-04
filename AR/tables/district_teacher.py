@@ -418,7 +418,7 @@ class DistrictTeacher(Base):
                 self.shared_teacher_id_4, self.shared_teacher_id_5,
                 self.shared_teacher_id_6):
                 if teacher_id != "":
-                    teacher = (object_session(self).query(DistrictTeacher) 
+                    teacher = (object_session(self).query(DistrictTeacher)
                         .filter(DistrictTeacher.teacher_id==teacher_id)
                         .one()
                     )
