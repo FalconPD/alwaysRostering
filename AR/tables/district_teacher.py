@@ -1,10 +1,19 @@
+"""
+An ORM object representing a DistrictTeacher in Genesis
+"""
+
+# System
 import re
 import logging
+
+# Sqlalchemy
 from sqlalchemy import Column, Integer, String, Boolean, BigInteger, Date
 from sqlalchemy import DateTime, ForeignKeyConstraint
 from sqlalchemy.orm import relationship, object_session
-from AR.tables import Base, utils, StaffEmploymentRecord 
 from sqlalchemy.ext.hybrid import hybrid_property
+
+# alwaysRostering
+from AR.tables import Base, utils, StaffEmploymentRecord
 
 class DistrictTeacher(Base):
     __tablename__ = 'DISTRICT_TEACHERS'
@@ -369,7 +378,7 @@ class DistrictTeacher(Base):
             logging.warning('{} does not have a user_id (data_1)'.format(self))
             return None
         return self.data_1.lower() + '@monroe.k12.nj.us'
-    
+
     @property
     def long_email(self):
         """

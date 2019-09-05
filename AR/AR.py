@@ -71,6 +71,7 @@ teacher_job_codes = [
     '2235',
     '2236',
     '2302',
+    '2305', # Social Studies Humanities
     '2322',
     '2400',
     '2401',
@@ -216,7 +217,7 @@ def teachers():
     Manually adds teachers who do not have SMIDs yet but should be setup with
     subscription services
     """
-    extra_ids = ['8326', '8319']
+    extra_ids = []
     extra_query = (
         db_session.query(DistrictTeacher)
         .filter(DistrictTeacher.teacher_id.in_(extra_ids))
