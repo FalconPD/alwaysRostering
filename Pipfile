@@ -4,14 +4,15 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-sqlalchemy = "*"
+SQLAlchemy = "*"
 aiohttp = "*"
 click = "*"
-"beautifulsoup4" = "*"
+beautifulsoup4 = "*"
 selenium = "*"
 multidict = "*"
 openpyxl = "*"
 xlrd = "*"
 brotlipy = "*"
+Brotli = "*"
 
 [dev-packages]
