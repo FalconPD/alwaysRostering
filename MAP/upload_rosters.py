@@ -5,11 +5,11 @@ import logging
 import AR.nwea_map as nwea_map
 
 async def perform_actions(standard, additional, status):
-    async with nwea_map.Session() as map_session: 
+    async with nwea_map.Session() as map_session:
         if standard:
             print(f"Uploading standard roster: {standard}")
             print(await map_session.upload_standard(standard))
-        
+
         if additional:
             print(f"Uploading additional users roster: {additional}")
             print(await map_session.upload_additional(additional))

@@ -12,7 +12,7 @@ selenium = "*"
 multidict = "*"
 openpyxl = "*"
 xlrd = "*"
-brotlipy = "*"
 Brotli = "*"
+brotli = "*"
 
 [dev-packages]

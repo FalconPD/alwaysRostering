@@ -163,6 +163,7 @@ SCHOOL_COURSE_CODES = {
         '1702',     # Life Skills
         '1805',     # Life Skills
         '1807',     # Vocational Exploration
+        '1923',     # Language Arts Transitional ESL
     ),
     'MTMS': (
         '105', # Accelerated Math

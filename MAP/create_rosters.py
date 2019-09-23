@@ -51,8 +51,9 @@ def add_student_to_row(row, student):
     row['Student Gender'] = student.gender
     row['Student Grade'] = student.grade
     row['Student Ethnic Group Name'] = student.race
-    row['Student User Name'] = student.email
+    row['Student User Name'] = student.simple_username
     row['Student Email'] = student.email
+#    row['Student Email'] = f"{student.student_id}@students.monroe.k12.nj.us"
     return row
 
 def roster_k3():
@@ -82,12 +83,11 @@ def roster_k3():
         for teacher in student.homeroom_teachers:
             if teacher != None:
                 row = add_school_to_row({}, student.school)
-                row['Class Name'] = 'Homeroom ' + student.homeroom_suffix
+                row['Class Name'] = f'{teacher.last_name}-Homeroom {student.homeroom_suffix}'.strip()
                 row = add_teacher_to_row(row, teacher)
                 row = add_student_to_row(row, student)
                 standard_roster.writerow(row)
                 if teacher.teacher_id in constants.DUPLICATES:
-                    row['Class Name'] += ' ' + teacher.teacher_last_name
                     for additional_teacher_id in constants.DUPLICATES[teacher.teacher_id]:
                         additional_teacher = (AR.teachers()
                             .filter(DistrictTeacher.teacher_id==additional_teacher_id)

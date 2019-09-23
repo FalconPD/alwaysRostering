@@ -1,0 +1,75 @@
+MTHS (1415, 1) - Nothing in this, deleted
+MTHS (1409, 1) - Nothing in this, deleted
+MTHS (1412, 1) - Steve MacKenzie's course from last year, GP changed, Steve added as admin
+MTHS (3001, 1) - Jocelyn Cadot and Sandra Mascali's course from last year, GP changed, both added as admin 
+MTHS (1414, 1) - Nothing in this, deleted
+MTHS (7001, 1) - Sandra Mascali's course from last year, GP changed, added as admin 
+MTHS (7001, 4) - Sandra Mascali's course from last year, GP changed, added as admin
+MTHS (7001, 5) - Sandra Mascali's course from last year, GP changed, added as admin
+MTHS (7001, 6) - Nothing in this, deleted 
+MTHS (7001, 7) - Nothing in this, deleted
+MTHS (7001, 8) - Nothing in this, deleted
+MTHS (7003, 1) - Leigh Voghtman's course from last year, GP changed, added as admin
+MTHS (7003, 3) - Leigh Voghtman's course from last year, GP changed, added as admin
+MTMS (102, 12) - Nothing in this, deleted
+MTHS (0593, 1) - Kathy Hoffman's course from last year, GP changed, already an admin 
+MTHS (0593, 2) - Nothing in this, deleted
+MTHS (0813, 1) - Nothing in this, deleted
+MTHS (1506, 2) - Nothing in this, deleted
+MTHS (0721, 1) - Nothing in this, deleted 
+MTHS (0721, 2) - Kathleen Dougherty's course from last year, GP changed, added as admin
+MTHS (0521, 1) - Nothing in this, deleted
+MTHS (1702, 1) - Nothing in this, deleted
+MTHS (1702, 2) - Nothing in this, deleted
+MTHS (1800, 1) - Jeff Shanfields's course from last year, GP changed, added as admin
+MTHS (0228, 1) - Nothing in this, deleted
+MTHS (1332, 2) - Nothing in this, deleted
+MTHS (1419, 1) - Nothing in this, deleted
+MTHS (1419, 2) - Nothing in this, deleted
+MTHS (1700, 1) - Nothing in this, deleted
+MTHS (1700, 2) - Nothing in this, deleted
+MTHS (1131, 3) - Christian Jessops course from last year, GP changed, added as admin
+MTHS (1424, 1) - Nothing in this, deleted
+MTHS (1226, 1) - Jaclyn Lithgow's course from last year, GP changed, added as admin
+MTHS (1143, 3) - James McIntire's course from last year, GP changed, added as admin
+MTHS (0610, 1) - Nothing in this, deleted
+MTHS (0610, 2) - Nothing in this, deleted
+MTHS (1321, 1) - Kristin Youngblood's course from last year, GP changed, already an admin
+MTHS (1321, 2) - 
+MTHS (1321, 3)
+MTHS (1500, 2)
+MTHS (1503, 1)
+MTHS (1335, 1)
+MTHS (1335, 2)
+MTHS (0730, 1)
+MTHS (0730, 2)
+WES (250, 8)
+MTHS (0731, 1)
+MTHS (0335, 1)
+MTHS (0805, 1)
+MTHS (0800, 2)
+MTHS (0409, 1)
+MTHS (0520, 1)
+MTHS (0112, 1)
+MTHS (1216, 1)
+MTHS (1316, 2)
+MTMS (270, 43)
+MTMS (470, 27)
+MTHS (1340, 1)
+MTHS (1614, 1)
+MTHS (0102, 1)
+MTHS (0396, 1)
+MTHS (1328, 1)
+BES (240, 9)
+MTHS (1802, 2)
+MTHS (1802, 3)
+MTHS (1207, 2)
+MTHS (0223, 2)
+MTMS (102, 25)
+MTMS (102, 34)
+MTMS (102, 63)
+MTHS (0231, 2)
+MTHS (0231, 3)
+MTHS (0231, 8)
+MTHS (0231, 9)
+MTHS (1213, 2)

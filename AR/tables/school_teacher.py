@@ -74,7 +74,7 @@ class SchoolTeacher(Base):
         back_populates='school_teacher', viewonly=True)
 
     report_code = '991021'
-    csv_header = [ 
+    csv_header = [
         'ATTENDANCE_HOMEROOM',
         'BASIC_SKILLS_TEACHER',
         'CREATED_BY_PORTAL_OID',

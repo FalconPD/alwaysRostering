@@ -18,16 +18,26 @@ if [ ${DBSIZE} -lt ${MINSIZE} ]; then
     exit 1
 fi
 
-# Create and start uploading MAP rosters
+# Create MAP rosters
 pipenv run python ./MAP/create_rosters.py genesis.db MAP all
+
+# Upload the MAP StandardRoster
 pipenv run python ./MAP/upload_rosters.py --standard MAP_StandardRoster.csv --status
 
-#
-## Sync Atlas user accounts
-#run "python ./Atlas/sync_atlas.py ${GENESIS} ./Atlas/id_map.csv sync_users"
-#
-## Sync Schoology
-#run "python ./Schoology/sync_schoology.py ${GENESIS}"
-#
-## Upload the Additional MAP users
-#run "python ./MAP/upload_rosters.py --additional ${ADDITIONAL} --status"
+# Uploading MAP rosters takes a while so we perform some other actions before
+# uploading the MAP AdditionalUsers roster
+
+# Sync Schoology users accounts
+pipenv run python ./Schoology/users.py --environment=production genesis.db
+
+# Sync Schoology courses
+pipenv run python ./Schoology/courses.py --environment=production genesis.db
+
+# Sync Schoology enrollments
+pipenv run python ./Schoology/enrollments.py --environment=production genesis.db
+
+# Sync Atlas users
+pipenv run python ./Atlas/users.py genesis.db
+
+# Upload the MAP AdditionalUsers
+pipenv run python ./MAP/upload_rosters.py --additional MAP_AdditionalUsers.csv --status

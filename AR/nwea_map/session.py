@@ -1,23 +1,28 @@
+"""
+Handles automated interactions with the NWEA MAP system
+"""
+
+# System
 import asyncio
 import aiohttp
-import json
 import logging
 import sys
 
+# alwaysRostering
+import AR.credentials as credentials
 from AR.nwea_map import constants
 from AR.util.token_bucket import TokenBucket
 
 class Session():
     """
-    A context manager to handle importing profiles in NWEA MAP 
+    A context manager to handle importing profiles in NWEA MAP
     """
     async def __aenter__(self):
         """
         Creates an aiohttp session, loads the credentials, and sets up a TBF
         """
-        self.credentials = json.load(open('../include/credentials.json'))
-        self.auth = aiohttp.BasicAuth(login=self.credentials['map']['username'],
-            password=self.credentials['map']['password'])
+        self.auth = aiohttp.BasicAuth(login=credentials.map['username'],
+            password=credentials.map['password'])
         self.session = aiohttp.ClientSession()
         self.token_bucket = TokenBucket(constants.MAX_TOKENS,
             constants.TOKEN_RATE)

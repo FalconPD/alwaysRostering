@@ -25,12 +25,11 @@ class UsersMixin():
             last_name = name[0]
             first_name = name[1]
             emails = list(td[1].stripped_strings)
-            email = emails[0] # for now we only deal with the first email
             attributes = [ i for i in td[2].stripped_strings ]
             privileges = [ i for i in td[3].stripped_strings ]
-            self.users[atlas_id] = User(atlas_id, first_name, last_name, email,
+            self.users[atlas_id] = User(atlas_id, first_name, last_name, emails,
                 attributes, privileges)
-       
+
     async def load_users(self):
         """
         Loads / parses the users pages on Atlas to create a users list
@@ -43,11 +42,11 @@ class UsersMixin():
             span.contents[0]).group(1))
 
         # Load all the pages asynchronously
-        logging.debug("Loading {} pages of users".format(max_pages))
+        logging.debug(f"Loading {max_pages} pages of users")
         tasks = []
         for page in range(1, max_pages + 1):
-            tasks.append(self.parse_user_page(constants.BASE_URL + 
-                'Atlas/Admin/View/Teachers?Page={}'.format(page)))
+            tasks.append(self.parse_user_page(constants.BASE_URL +
+                f'Atlas/Admin/View/Teachers?Page={page}'))
         await asyncio.gather(*tasks)
 
     async def action(self, action, method, atlas_object):
@@ -63,10 +62,10 @@ class UsersMixin():
             }
         }
         form_data = {'Actions': json.dumps(json_data)}
-        resp = await self.session.post(constants.BASE_URL +
-            'Atlas/Controller', data=form_data)
+        resp = await self.post(constants.BASE_URL + 'Atlas/Controller',
+                               data=form_data)
         response_json = await resp.json(content_type=None)
-        logging.debug("Action Response: {}".format(response_json))
+        logging.debug(f"Action Response: {response_json}")
         return response_json
 
     async def save_user(self, user):
@@ -78,29 +77,28 @@ class UsersMixin():
             user.save_object())
         message = response_json['Save']
         if 'ID' not in message:
-            logging.error("Unable to save user: {}".format(user))
+            logging.error(f"Unable to save user {user}")
             return None
         if message['ID'] == 'Invalid Email Address':
-            logging.error("Unable to save user: Invalid Email Address")
-            return None 
+            logging.error(f"Unable to save user {user}: Invalid Email Address")
+            return None
         return str(message['ID'])
 
     async def delete_user(self, user):
         """
-        Deletes a user from Atlas, the id_map, and the users dict
+        Deletes a user from Atlas and the users dict
         """
         response_json = await self.action("Delete", "AsyncDelete",
             user.delete_object())
         message = response_json['Delete']
         if 'Result' not in message:
-            logging.error("Unable to delete user (no result)".format(user))
+            logging.error(f"Unable to delete user {user} (no result)")
             return
         else:
             if message['Result'] != 'OK':
-                logging.error("Unable to delete user".format(user))
+                logging.error(f"Unable to delete user {user}")
             return
         atlas_id = user.atlas_id
-        self.id_map.del_by_atlas(atlas_id)
         del(self.users[atlas_id])
 
     async def update_privilege(self, user):
@@ -111,21 +109,43 @@ class UsersMixin():
             user.privilege_object())
         message = response_json['Save']
         if 'ID' not in message:
-            logging.error("Unable to update privileges for user {}".format(user))
+            logging.error(f"Unable to update privileges for user {user}")
             return None
         return message['ID']
 
-    async def update_user(self, user, genesis_id):
+    async def update_user(self, user):
         """
-        Updates / creates a user object on Atlas, changes the id_map as
-        necessary, updates the users dict, and sets the pivileges if
-        necessary. Returns the atlas_id
+        Updates / creates a user object on Atlas, updates the users
+        dict, and sets the pivileges if necessary. Returns the user
         """
         atlas_id = await self.save_user(user)
         if user.atlas_id == '':
             user.atlas_id = atlas_id
             self.users[atlas_id] = user
-            self.id_map.add(genesis_id, atlas_id)
         if len(user.privileges) != 0:
             await self.update_privilege(user)
-        return atlas_id
+        return user
+
+    def email_to_user(self):
+        """
+        Creates a dictionary where the keys are uppercase emails and the values
+        are User objects that have that email.
+        """
+        email_to_user_dict = {}
+        for atlas_id, user in self.users.items():
+            for email in user.emails:
+                email_to_user_dict[email.upper()] = user
+        return email_to_user_dict
+
+    def find_user_by_name(self, first, last):
+        """
+        Looks up a user by their first and last name. The search is case
+        insensitive and returns None on failure.
+        """
+        upper_first = first.upper()
+        upper_last = last.upper()
+        for atlas_id, user in self.users.items():
+            if (upper_first == user.first_name.upper() and
+                upper_last == user.last_name.upper()):
+                return user
+        return None

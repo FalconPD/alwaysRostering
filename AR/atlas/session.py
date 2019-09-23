@@ -1,5 +1,4 @@
 from AR.atlas import constants
-from AR.atlas.id_map import ID_Map
 from AR.atlas.login_mixin import LoginMixin
 from AR.atlas.users_mixin import UsersMixin
 import json
@@ -17,14 +16,13 @@ class Session(LoginMixin, UsersMixin):
     id_map = None # maps Atlas IDs to Genesis IDs
     users = {}
 
-    async def __aenter__(self, map_file):
+    async def __aenter__(self):
         """
         Creates an aiohttp session, logs in, gets a list of users, loads the
         map
         """
         self.session = aiohttp.ClientSession()
         await self.login()
-        self.id_map = ID_Map(map_file)
         await self.load_users()
         return self
 
@@ -33,7 +31,6 @@ class Session(LoginMixin, UsersMixin):
         Closes aiohttp session, writes map
         """
         await self.session.close()
-        self.id_map.save()
 
     async def request(self, method, url, json, params, data, allow_redirects):
         """

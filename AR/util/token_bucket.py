@@ -26,13 +26,13 @@ class TokenBucket():
             if self.curr_tokens > self.max_tokens:
                 self.curr_tokens = self.max_tokens
             self.last_time = curr_time
-        
+
     async def get(self):
         """
         Wait for tokens to be available and then take one out
         """
         while (self.curr_tokens == 0):
-            asyncio.wait(self.time_quantum)
+            await asyncio.sleep(self.time_quantum)
             self.update()
         self.curr_tokens -= 1
         return

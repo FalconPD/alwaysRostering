@@ -25,7 +25,9 @@ async def fetch_db(db_file, loop):
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
 
-    async with aiohttp.ClientSession(loop=loop) as session:
+    # These requests are lengthy and the server may timeout with HTTP-Keepalive
+    # closing each connection solves the ServerDisconnectedError
+    async with aiohttp.ClientSession(loop=loop, headers={'Connection': 'close'}) as session:
         print('Logging in to Genesis')
         await login(session=session)
         print('Getting tables: {}'.format(", ".join([cls.__tablename__ for cls in sa_classes])))

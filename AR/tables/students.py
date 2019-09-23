@@ -555,8 +555,11 @@ class Student(Base):
         """
         Utility function to return a list of all homeroom teachers
         """
-        if self.homeroom == '':
+        if self.homeroom == '' or self.homeroom == None:
             logging.warning(f"{self}: No homeroom")
+            return [None]
+        if self.homeroom_school_teacher == '' or self.homeroom_school_teacher == None:
+            logging.warning(f"{self}: No homeroom_school_teacher")
             return [None]
         return self.homeroom_school_teacher.district_teacher.shared_teachers
 
@@ -600,7 +603,7 @@ class Student(Base):
             return 'bb'
         if self.current_school == 'BES':
             return 'bs'
-        if self.current_school == 'WLS':
+        if self.current_school == 'WES':
             return 'wl'
         if self.current_school == 'MTMS':
             return 'ms'
@@ -610,6 +613,7 @@ class Student(Base):
             return 'ot'
         if self.current_school == 'AES':
             return 'ag'
+        logging.warning(f"Cannot create short_school_code from {self.current_school} for {self}")
         return None
 
     @property
@@ -617,7 +621,7 @@ class Student(Base):
         """
         A simple(r) username for elementary students
         """
-        return self.short_school_code + self.student_id
+        return(f"{self.short_school_code}{self.student_id}")
 
     @property
     def simple_password(self):

@@ -1,27 +1,27 @@
-# sync_atlas.py
+# Atlas Scripts
 
 ## Overview
 
-This script provides a command line interface to keep Atlas in sync with the
-information in Genesis. It uses a CSV map_file to keep track of how Atlas IDs
-correspond to Genesis IDs (Atlas does not current support storing a school ID).
-For all actions performed by this script the id_map should be maintained
-automatically. It can be recreated (to the best of its ability) by using the
-create_map command.
+This directory contains scripts used to keep Atlas in sync with the information
+in Genesis. Currently Atlas does not have a means of storing the Genesis ID so
+users are matched by (in order of precedence):
 
-## Usage
-```
-Usage: sync_atlas.py [OPTIONS] DB_FILE MAP_FILE COMMAND1 [ARGS]... [COMMAND2
-                     [ARGS]...]...
+1. Their userid email address
+2. Their first and last names
+3. Their first name and former (maiden) last name
 
-  Loads the Genesis database from DB_FILE and the Atlas to Genesis ID map
-  from MAP_FILE before performing COMMAND(s).
+It should also be noted that Atlas allows users to have multiple emails, so a
+user may report that they can still log in with their old FirstName.LastName
+email address.
+
+## users.py
+
+```console
+Usage: users.py [OPTIONS] DB_FILE
+
+  Syncs Atlas user accounts with Genesis database file DB_FILE
 
 Options:
   --debug  Print debugging statements
   --help   Show this message and exit.
-
-Commands:
-  create_map  create id map based on first and last names
-  sync_users  sync up user accounts
 ```
