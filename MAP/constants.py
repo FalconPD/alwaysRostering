@@ -112,6 +112,7 @@ SCHOOL_COURSE_CODES = {
         '1324',     # U.S. History I
         '1325',     # Math/Dynamics of Algebra I
         '1327',     # U. S. History 2
+	'1330',     # Reading II
         '1332',     # Math IV Computers in Business
         '1336',     # Science/Biology
         '1337',     # Science/Chemistry
@@ -156,6 +157,7 @@ SCHOOL_COURSE_CODES = {
         '1503',     # Life Skills
         '1604',     # Fundamentals of Biology
         '1608',     # HISTORY/US History I
+        '1610',     # Fundamentals of Algebra I
         '1611',     # Fundamentals of Geometry
         '1619',     # Language Arts
         '1700',     # Vocational Exploration
@@ -163,6 +165,9 @@ SCHOOL_COURSE_CODES = {
         '1702',     # Life Skills
         '1805',     # Life Skills
         '1807',     # Vocational Exploration
+	'1920',	    # English as a Second Language I
+	'1921',     # English as a Second Language II
+	'1922',	    # English as a Second Language III
         '1923',     # Language Arts Transitional ESL
     ),
     'MTMS': (
