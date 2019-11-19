@@ -273,13 +273,25 @@ class CourseSection(Base):
     @property
     def semester(self):
         """
-        Gets the semester from the first subsection
+        Gets the semester from THE FIRST subsection
         """
-        if self.first_subsection != None:
-            if self.first_subsection.semester != '':
-                return self.first_subsection.semester
-        logging.warning(f"{self}: Unable to lookup semester")
-        return None
+        return self.first_subsection.semester
+        
+    @property
+    def semesters(self):
+        """
+        Gets the semesters from all subsections
+        """
+        semesters = []
+        for subsection in self.subsections:
+            semester = subsection.semester
+            if semester == '':
+                logging.warming(f"{self}: Empty semester for {subsection}")
+            else:
+                semesters.append(subsection.semester)         
+        if semesters == []:
+            logging.warning(f"{self}: Unable to look up semester")
+        return semesters
 
     @property
     def name(self):

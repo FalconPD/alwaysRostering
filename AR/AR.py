@@ -110,6 +110,7 @@ sysadmin_job_codes = [
     '9200' # Technicians
 ]
 edservices_job_codes = [
+    '0002', # Counselor (Purchased)
     '0004', # OT (Purchased)
     '3101', # Counselor
     '3105', # Media Specialist

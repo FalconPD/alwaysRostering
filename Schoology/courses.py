@@ -52,25 +52,32 @@ async def sync(loop, db_file, environment):
                 course_code = course.school_code + ' ' + course.course_code
                 sections = []
                 for section in course.active_sections:
-                    semester = section.semester
-                    if semester == 'FY': # There is only ONE full year
-                        grading_period = (f"{section.school_year} "
-                                          f"{section.semester}")
+                    semesters = section.semesters
+                    if 'FY' in semesters: # There is only ONE full year
+                        grading_periods = [f"{section.school_year} FY"]
                     else: # Others are per building
-                        grading_period = (f"{section.school_year} "
-                                          f"{section.school_code} "
-                                          f"{section.semester}")
-                    grading_period_id = Schoology.GradingPeriods.lookup_id(grading_period)
-                    if grading_period_id == None:
-                        logging.warning("Unable to lookup grading period id for "
-                                        f"{section.section_school_code} (Are "
-                                        "the grading periods synced with "
-                                        "Schoology?)")
-                    else:
+                        grading_periods = []
+                        for semester in semesters:
+                            grading_periods.append(f"{section.school_year} "
+                                                   f"{section.school_code} "
+                                                   f"{semester}")
+                    grading_period_ids = []
+                    for grading_period in grading_periods:
+                        grading_period_id = Schoology.GradingPeriods.lookup_id(
+                                grading_period)
+                        if grading_period_id == None:
+                            logging.warning("Unable to lookup grading period "
+                                            "id for "
+                                            f"{section.section_school_code} "
+                                            "(Are the grading periods synced "
+                                            "with Schoology?)")
+                        else:
+                            grading_period_ids.append(grading_period_id)
+                    if grading_period_ids != []:
                         sections.append({
                             'title': section.name,
                             'section_school_code': section.section_school_code,
-                            'grading_periods': grading_period_id,
+                            'grading_periods': grading_period_ids,
                         })
                 tasks.append(
                     Courses.add_update(building_code, title, course_code, sections)
