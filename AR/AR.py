@@ -240,7 +240,7 @@ def sysadmins():
     Returns a query of sysadmins.
     Manually adds Ed Tech Facilitator and Director of IT by ID
     """
-    extra_ids = ['099', '9999']
+    extra_ids = ['099', '9999', '947']
     extra_query = (
         db_session.query(DistrictTeacher)
         .filter(DistrictTeacher.teacher_id.in_(extra_ids))
@@ -258,7 +258,7 @@ def curradmins():
     * Curriculum Secretaries
     * Ed Tech facilitator
     """
-    extra_ids = ['099', '7199']
+    extra_ids = ['099', '7199', '947']
     extra_query = (
         db_session.query(DistrictTeacher)
         .filter(DistrictTeacher.teacher_id.in_(extra_ids))

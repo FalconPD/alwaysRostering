@@ -43,13 +43,16 @@ async def sync(loop, db_file, environment):
             print(f"Enrolling students and teachers in {len_sections} sections...")
             tasks = []
             for section in AR.sections():
-                # enroll the teacher
+                # enroll ALL the teachers of subsections
                 section_school_code = section.section_school_code
-                teacher_id = section.first_subsection.teacher_id
-                tasks.append(
-                    Enrollments.add(section_school_code, teacher_id, admin=True)
-                )
-            # enroll the students
+                for subsection in section.subsections:
+                    teacher_id = subsection.teacher_id
+                    if teacher_id != "":
+                        print(f"Teacher of {section_school_code} is {teacher_id}")
+                        tasks.append(
+                            Enrollments.add(section_school_code, teacher_id, admin=True)
+                        )
+                # enroll the students
                 for student in section.active_students:
                     student_id = student.student_id
                     tasks.append(
